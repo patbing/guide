@@ -124,13 +124,17 @@ test('s-based advances are ignored while far off route', () => {
   assert.equal(r.state.idx, 1);
 });
 
-test('off route fires after 10s', () => {
+test('off route fires after 10s and clears only below 15m', () => {
   let state = { idx: 1 };
   let r = stepFlags(state, { flags, fix: flags[1], s: 60, d: 30, accM: 10, t: 1000 });
   assert.equal(r.state.offrouteSince, 1000);
   assert.ok(!r.events.some((e) => e.type === 'offroute'));
   r = stepFlags(r.state, { flags, fix: flags[1], s: 60, d: 30, accM: 10, t: 11000 });
   assert.ok(r.events.some((e) => e.type === 'offroute'));
+  const between = stepFlags(r.state, { flags, fix: flags[1], s: 60, d: 20, accM: 10, t: 12000 });
+  assert.equal(between.state.offrouteSince, 1000, '20m is inside the clear hysteresis');
+  const clear = stepFlags(between.state, { flags, fix: flags[1], s: 60, d: 15, accM: 10, t: 13000 });
+  assert.equal(clear.state.offrouteSince, null);
 });
 
 test('headingOffset needs 3 valid samples and clamps', () => {

@@ -6,13 +6,14 @@ import {
 } from './belief.js';
 import { parseUtterance, resolveLandmark } from './landmark.js';
 import { startLocation, stopLocation, requestOrientationPermission, getOnce } from './location.js';
-import { speak, vibrate, initSpeech, startSTT, stopSTT, sttAvailable } from './speech.js';
-import { saveRoute, loadCachedRoute, saveLog } from './storage.js';
+import { speak, vibrate, initSpeech, startSTT, stopSTT, sttAvailable, stopSpeaking } from './speech.js';
+import { saveRoute, loadCachedRoute, saveLog, getSetting, saveSetting } from './storage.js';
 import { startSession, event, summary, download } from './log.js';
 import { distance, bearing, angleDiff, formatDistance } from './geo.js';
 import { createGuidance, tick, askLandmark, landmarkName } from './guidance.js';
 import { DEMO_ORIGIN, DEMO_POIS, detectIntent, matchPlace, rankCandidates, categoryLabel, kakaoRouteLinks } from './chat.js';
 import { createFlagMode } from './flag-mode.js';
+import { renderVoiceToggle } from './flag-ui.js';
 
 const ROUTE_URL = './data/routes/jamwon4-le-four.json';
 const $ = (sel) => document.querySelector(sel);
@@ -38,6 +39,10 @@ const state = {
   guideMap: null,
   locationStarted: false,
   flagMode: null,
+  settings: {
+    voice: getSetting('voice', false) === true,
+    vibrate: getSetting('vibrate', true) !== false,
+  },
   debug: new URLSearchParams(location.search).has('debug'),
   chat: {
     messages: [],
@@ -65,6 +70,7 @@ function showScreen(id) {
 
 function render() {
   const phase = state.phase;
+  renderVoiceToggle(state.settings.voice);
   $('#phase-pill').textContent = phaseLabel(phase);
   $('#phase-pill').dataset.phase = phase;
   if (phase === 'IDLE') showScreen(state.chat.demoChat ? 'screen-chat' : 'screen-home');
@@ -96,9 +102,23 @@ function logEvent(type, payload = {}) {
 }
 
 function say(text, opts = {}) {
+  if (!state.settings.voice && !opts.always) return false;
   const ok = speak(text, opts);
   if (ok) logEvent('speak', { text, priority: opts.priority || 1 });
   return ok;
+}
+
+function toggleVoice() {
+  state.settings.voice = !state.settings.voice;
+  saveSetting('voice', state.settings.voice);
+  renderVoiceToggle(state.settings.voice);
+  if (state.settings.voice) {
+    say('음성 안내를 켰어요.', { key: 'voice-on', priority: 2, force: true, always: true });
+  } else {
+    stopSpeaking();
+  }
+  toast(state.settings.voice ? '음성 안내를 켰어요.' : '음성 안내를 껐어요.');
+  state.flagMode?.render();
 }
 
 /* ---------------- route preview ---------------- */
@@ -224,12 +244,18 @@ async function beginFlags() {
         speak: (text, opts) => say(text, opts),
         vibrate,
         log: (type, payload) => logEvent(type, payload),
-        onFinish: () => { state.flagMode = null; finish(); },
+        onFinish: () => { state.flagMode = null; finish({ silent: true, haptic: false }); },
         onSwitchContinuous: () => switchToContinuous(),
+        voiceEnabled: () => state.settings.voice,
+        vibrateEnabled: () => state.settings.vibrate,
       },
     });
     setPhase('FLAGS');
     state.flagMode.start();
+    if (!getSetting('flagHintSeen', false)) {
+      saveSetting('flagHintSeen', true);
+      toast('소리는 기본 꺼짐. 화면과 진동으로 안내합니다.', 3500);
+    }
   } finally {
     flagStarting = false;
   }
@@ -241,7 +267,7 @@ function switchToContinuous() {
   state.lastMoveFix = state.fix;
   logEvent('switch_continuous', {});
   setPhase('GUIDING');
-  say('연속 안내로 전환합니다.', { key: 'flag-to-continuous', priority: 3, force: true });
+  toast('연속 안내로 전환합니다');
   if (state.fix) guideStep(state.fix);
   else renderGuide();
 }
@@ -446,12 +472,12 @@ function arrivingStep(fix) {
   if (d <= 10) finish();
 }
 
-function finish() {
+function finish({ silent = false, haptic = true } = {}) {
   if (state.phase === 'ARRIVED') return;
   logEvent('arrived', { remain: state.progress?.remain });
   setPhase('ARRIVED');
-  say(`도착했어요. ${state.route.dest.name}입니다.`, { key: 'arrived', priority: 3, force: true });
-  vibrate([200, 100, 200]);
+  if (!silent) say(`도착했어요. ${state.route.dest.name}입니다.`, { key: 'arrived', priority: 3, force: true });
+  if (haptic) vibrate([200, 100, 200]);
   renderArrive();
 }
 
@@ -546,6 +572,7 @@ function stopAll() {
   state.flagMode = null;
   stopLocation();
   stopSTT();
+  stopSpeaking();
   state.locationStarted = false;
   if (state.session) {
     logEvent('stopped', { phase: state.phase });
@@ -803,6 +830,7 @@ function bind() {
   $('#btn-home').addEventListener('click', () => setPhase('IDLE'));
   $('#btn-begin').addEventListener('click', begin);
   $('#btn-flags').addEventListener('click', beginFlags);
+  $('#btn-voice').addEventListener('click', toggleVoice);
   $('#btn-flag-next').addEventListener('click', () => state.flagMode?.confirm());
   $('#btn-flag-continuous').addEventListener('click', () => state.flagMode?.switchContinuous());
   $('#btn-flag-stop').addEventListener('click', stopAll);

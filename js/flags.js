@@ -9,6 +9,7 @@ export const FLAG = Object.freeze({
   TURN_ADVANCE_M: 8,
   MAX_GAP_M: 90,
   OFF_ROUTE_M: 25,
+  OFF_ROUTE_CLEAR_M: 15,
   OFF_ROUTE_MS: 10000,
   MIN_ACC_FACTOR: 0.8,
   ARROW_LOCK_FACTOR: 3,
@@ -94,14 +95,14 @@ export function stepFlags(state, input) {
   let nextIdx = idx;
   let reason = null;
 
-  // 경로 이탈: 25m 초과 10초 지속
+  // 경로 이탈: 25m 초과 10초 지속. 복귀는 15m 이하일 때만 해제(경계 깜빡임 방지).
   let offrouteSince = base.offrouteSince;
   if (Number.isFinite(d) && d > FLAG.OFF_ROUTE_M) {
     if (offrouteSince == null) offrouteSince = Number.isFinite(t) ? t : 0;
     if (Number.isFinite(t) && t - offrouteSince >= FLAG.OFF_ROUTE_MS) {
       events.push({ type: 'offroute', flagId: flag?.id || null });
     }
-  } else {
+  } else if (Number.isFinite(d) && d <= FLAG.OFF_ROUTE_CLEAR_M) {
     offrouteSince = null;
   }
 

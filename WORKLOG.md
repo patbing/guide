@@ -1,6 +1,6 @@
 # GUIDE WORKLOG
 
-최종 갱신: 2026-11-23
+최종 갱신: 2026-11-23 (무음 큐 카드)
 
 ## 현재 상태
 
@@ -20,9 +20,28 @@
 | `test/unit/flags.test.js` | 깃발 단위 테스트 |
 | `test/e2e/flag_e2e.py` | 딥링크·비절대 나침반·소보행 course·이탈/복귀·연속 전환·입구·종료 |
 | `mcp/server.mjs` | `nav_route`에 flags/deepLinkFlags, `nav_open_guide`에 `mode` |
+| `js/cue.js` | 상황→`{action, detail, distanceText, tone, ringPct, glow, haptic, speak}` 순수 매핑 |
+| `js/flag-ui.js` | 큐 카드·거리 링·진행 점·엣지 글로우·음성 토글 (SVG 아이콘, innerHTML 없음) |
+| `test/unit/cue.test.js` | GO/TURN_SOON/TURN_NOW/입구/이탈/대기·거리·무음 규칙 |
 
 깃발 데이터는 `data/routes/jamwon4-le-four.json`의 `flags[]`에 있다.
 `f0` start, `f1..f10` via/turn, `f11` entrance. `bearingIn`은 `atM-3`, `bearingOut`은 `atM+3` 기준.
+
+## 무음 큐 카드 (2026-11-23)
+
+- 음성 **기본 OFF** (`localStorage guide.setting.voice=false`). 헤더의 "소리" 버튼으로 전역 토글.
+- 깃발 모드에서는 켜도 `지금 회전`·`경로 이탈`·`도착`만 말한다. 다음 깃발/직진/거리 안내는 무음.
+  `say()`가 전역 게이트라 연속 안내도 기본 무음이다.
+- 화면: 큰 화살표 + 거리 링(60m→0) + `동작/거리/이정표` 3줄 + 진행 점 + 회전 방향 엣지 글로우.
+- 진동: 다음 깃발 `[60]`, 회전 임박 `[40,80,40]`, 지금 회전 `[40,60,40,60,40]`,
+  이탈 `[200,100,200]`, 도착 `[400]`, 입구 재확인 `[80,60,80]`.
+- 회전 시점: `s >= atM-2` 또는 거리 8m 이내. 이때 화살표는 `bearingOut`(나가는 방향)으로 스냅.
+  회전 방향(좌/우)은 `landmark.side`가 아니라 `bearingOut - bearingIn`으로 계산한다.
+- 큐 경계 히스테리시스: TURN_NOW는 20m까지, TURN_SOON은 32m까지 유지해 8m/20m 경계 깜빡임을 막는다.
+- 이탈: 화살표는 가장 가까운 경로점을 가리키고 빨간색. 복귀는 15m 이하에서만 해제(25m 경계 히스테리시스).
+  복귀 시 "경로로 돌아왔어요" 토스트 + 짧은 진동.
+- 거리 0m는 숫자를 숨기고 공간만 유지해 버튼 위치가 점프하지 않게 한다.
+- 연속 안내 화면/큐는 이번 범위 밖이지만, 음성은 전역 설정을 따른다(`say()` 게이트).
 
 ## 동작 규칙
 
@@ -39,12 +58,15 @@
 
 ```powershell
 cd guide
-node --test                 # 62 pass
+node --test                 # 75 pass (cue 14 포함)
 node mcp/test.mjs           # nav MCP 5 tools + mode
 python test/e2e/guide_e2e.py
 python test/e2e/chat_e2e.py
 python test/e2e/flag_e2e.py
 ```
+
+깃발 E2E는 `speechSynthesis.speak`/`navigator.vibrate`를 스파이로 바꿔
+**기본 음성 0회**, 음성 ON 시 회전만 발화, 진동 패턴, 이탈/복귀, 입구 1회/2회 확인을 검증한다.
 
 로컬 서버: `python -m http.server 8792` (guide 폴더).
 

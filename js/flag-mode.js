@@ -1,9 +1,10 @@
-// flag-mode.js — 깃발 모드 컨트롤러. 기존 GPS/나침반 콜백을 받아 reducer→UI.
+// flag-mode.js — 깃발 모드 컨트롤러. 기존 GPS/나침반 콜백을 받아 reducer→cue UI.
 import { stepFlags, flagDistance, flagBearing, arrowAngle, nextFlag, headingOffset, flagIndexAt } from './flags.js';
+import { cueFor, cueName, CUE_HAPTIC, cueDistanceText } from './cue.js';
 import { progress } from './router.js';
-import { formatDistance, bearing, angleDiff } from './geo.js';
+import { bearing, angleDiff } from './geo.js';
 import { clockText } from './guidance.js';
-import { renderFlagUI } from './flag-ui.js';
+import { renderFlagUI, showCueToast, clearCueToast } from './flag-ui.js';
 
 export function createFlagMode({ route, callbacks = {} }) {
   const {
@@ -12,6 +13,8 @@ export function createFlagMode({ route, callbacks = {} }) {
     log = () => {},
     onFinish = () => {},
     onSwitchContinuous = () => {},
+    voiceEnabled = () => false,
+    vibrateEnabled = () => true,
   } = callbacks;
 
   let state = {
@@ -24,6 +27,9 @@ export function createFlagMode({ route, callbacks = {} }) {
     lastFix: null,
     heading: null,
     course: null,
+    s: null,
+    d: null,
+    closest: null,
     offsetLog: [],
   };
   let active = false;
@@ -33,62 +39,91 @@ export function createFlagMode({ route, callbacks = {} }) {
   let manualAdvanced = false;
   let entranceNudges = 0;
   let lastNudgeAt = 0;
+  let lastCue = { idx: -1, state: null };
 
   function currentFlag() {
     return route?.flags?.[state.idx] || null;
   }
 
+  function currentCue() {
+    const flag = currentFlag();
+    const dist = state.lastFix ? flagDistance(state.lastFix, flag) : NaN;
+    return cueFor({
+      flag,
+      distM: dist,
+      s: state.s,
+      d: state.d,
+      near: state.near,
+      offroute: state.offroute,
+      hasFix: Boolean(state.lastFix),
+      prevState: lastCue.idx === state.idx ? lastCue.state : null,
+    });
+  }
+
+  function hasHeading() {
+    const h = state.heading;
+    if (!h || !h.absolute || !Number.isFinite(h.deg)) return false;
+    return !h.t || Date.now() - h.t < 5000;
+  }
+
   function buildView() {
     const flag = currentFlag();
-    if (!flag) {
-      return { name: '도착', distanceText: '', directionText: '', statusText: '', badgeText: '', nextLabel: '도착 확인' };
-    }
+    const cue = currentCue();
     const dist = state.lastFix ? flagDistance(state.lastFix, flag) : NaN;
     const h = state.heading;
-    const fresh = Boolean(h) && (!h.t || Date.now() - h.t < 5000);
-    const hasHeading = Boolean(fresh && h.absolute && Number.isFinite(h.deg));
-    const refDeg = hasHeading ? h.deg : (Number.isFinite(state.course) ? state.course : null);
-    const target = state.locked && Number.isFinite(flag.bearingIn)
-      ? flag.bearingIn
-      : flagBearing(state.lastFix, flag);
+    const absolute = hasHeading();
+    const refDeg = absolute ? h.deg : (Number.isFinite(state.course) ? state.course : null);
+    const target = state.offroute && state.closest
+      ? bearing(state.lastFix, state.closest)
+      : cue.state === 'TURN_NOW' && Number.isFinite(flag?.bearingOut)
+        ? flag.bearingOut
+        : state.locked && Number.isFinite(flag?.bearingIn)
+          ? flag.bearingIn
+          : flagBearing(state.lastFix, flag);
     const angle = Number.isFinite(target) && refDeg != null ? arrowAngle(target, refDeg) : null;
 
-    let directionText = '위치 잡는 중';
-    if (state.lastFix) {
-      if (hasHeading) directionText = `${clockText(target, h.deg)} · 화살표 방향`;
-      else if (refDeg != null) directionText = `이동 방향 기준 ${clockText(target, refDeg)} · 화살표 유지`;
-      else directionText = '10m 걸으면 방향을 잡을게요';
+    let bearingText = '';
+    const quiet = ['OFF_ROUTE', 'TURN_NOW', 'ARRIVE', 'DONE'].includes(cue.state);
+    if (state.lastFix && Number.isFinite(target) && !quiet) {
+      if (absolute) bearingText = clockText(target, h.deg);
+      else if (Number.isFinite(refDeg)) bearingText = `이동 방향 기준 ${clockText(target, refDeg)}`;
+      else bearingText = '10m 걸으면 방향을 잡을게요';
     }
 
-    const landmark = flag.landmark?.text || flag.name;
     let statusText = '';
-    if (state.offroute) statusText = '경로를 벗어났어요. 연속 안내로 전환하세요.';
-    else if (state.near) statusText = `거의 도착 — ${landmark} 확인`;
-    else if (state.locked) statusText = `가까워요 — ${landmark} 확인`;
-    else if (flag.note) statusText = flag.note;
+    if (flag?.kind === 'entrance' && state.near) statusText = '도착 확인을 누르세요';
 
     let badgeText = '';
     let badgeKind = '';
+    const atDoor = cue.state === 'ARRIVE' || cue.state === 'DONE';
     if (!state.lastFix) { badgeText = 'GPS 대기'; badgeKind = 'warn'; }
     else if (state.offroute) { badgeText = '경로 이탈'; badgeKind = 'danger'; }
-    else if (!hasHeading) { badgeText = '나침반 없음'; badgeKind = 'warn'; }
+    else if (!absolute && !atDoor) { badgeText = '나침반 없음'; badgeKind = 'warn'; }
     else if (state.lastFix.acc > 30) { badgeText = 'GPS 약함'; badgeKind = 'warn'; }
-    else if (state.locked) { badgeText = '고정'; badgeKind = 'ok'; }
 
+    const total = Math.max(1, (route?.flags?.length || 1) - 1);
     return {
-      name: flag.name,
-      distanceText: Number.isFinite(dist) ? formatDistance(dist) : '—',
-      directionText,
+      cue,
+      angle,
+      bearingText,
       statusText,
       badgeText,
       badgeKind,
-      angle,
-      nextLabel: flag.kind === 'entrance' ? '도착 확인' : '도착 / 다음',
+      progress: { idx: state.idx, total },
+      voiceOn: Boolean(voiceEnabled()),
+      nextLabel: flag?.kind === 'entrance' ? '도착 확인' : '다음 이정표',
     };
   }
 
   function render() {
     renderFlagUI(buildView());
+  }
+
+  function fireCue(cue) {
+    if (cue.haptic && vibrateEnabled()) vibrate(cue.haptic);
+    if (cue.speak && voiceEnabled()) {
+      speak(cue.speak, { key: `cue:${cue.state}:${state.idx}`, priority: 3, force: true });
+    }
   }
 
   // offset은 수집·기록만 한다. 화살표에는 절대 적용하지 않는다(양성 피드백 방지).
@@ -132,6 +167,7 @@ export function createFlagMode({ route, callbacks = {} }) {
     manualAdvanced = false;
     entranceNudges = 0;
     lastNudgeAt = 0;
+    lastCue = { idx: -1, state: null };
     state = {
       idx: 1,
       near: false,
@@ -142,11 +178,16 @@ export function createFlagMode({ route, callbacks = {} }) {
       lastFix: null,
       heading: null,
       course: null,
+      s: null,
+      d: null,
+      closest: null,
       offsetLog: [],
     };
     render();
+    const cue = currentCue();
+    lastCue = { idx: state.idx, state: cue.state };
+    if (vibrateEnabled()) vibrate(CUE_HAPTIC.advance);
     const flag = currentFlag();
-    if (flag) speak(`첫 깃발, ${flag.name}. 화살표를 따라가세요.`, { key: 'flag-start', priority: 3, force: true });
     log('flag_start', { idx: state.idx, flag: flag?.name });
   }
 
@@ -161,6 +202,7 @@ export function createFlagMode({ route, callbacks = {} }) {
     if (!state.lastFix && !manualAdvanced && p.d <= 25) {
       state.idx = flagIndexAt(route.flags, p.s);
     }
+    const prevFlag = currentFlag();
     const r = stepFlags(state, {
       flags: route.flags,
       fix,
@@ -176,6 +218,9 @@ export function createFlagMode({ route, callbacks = {} }) {
       course: state.course,
       offroute: state.offroute,
       offsetLog: state.offsetLog,
+      s: p.s,
+      d: p.d,
+      closest: p.closest,
     };
 
     if (!courseAnchor) courseAnchor = fix;
@@ -192,26 +237,34 @@ export function createFlagMode({ route, callbacks = {} }) {
 
     for (const ev of r.events) {
       if (ev.type === 'advance') {
-        const flag = currentFlag();
-        if (flag) {
-          const dist = flagDistance(fix, flag);
-          const text = `다음 깃발, ${flag.name}. ${Number.isFinite(dist) ? formatDistance(dist) : ''} 앞이에요.`;
-          speak(text, { key: `flag:${flag.id}`, priority: 2 });
-          vibrate([60]);
-          log('flag_advance', { idx: state.idx, flag: flag.name, reason: ev.reason });
-        }
+        if (vibrateEnabled()) vibrate(CUE_HAPTIC.advance);
+        const passed = cueName(prevFlag);
+        showCueToast(passed ? `${passed} 지나왔어요` : '다음 이정표');
+        log('flag_advance', { idx: state.idx, flag: currentFlag()?.name, reason: ev.reason });
       } else if (ev.type === 'arrived') {
         log('flag_arrived', { idx: state.idx });
-        speak('도착했어요.', { key: 'flag-arrived', priority: 3, force: true });
-        vibrate([200, 100, 200]);
         active = false;
         flushOffsetLog();
+        if (vibrateEnabled()) vibrate(CUE_HAPTIC.arrive);
+        if (voiceEnabled()) speak('도착했어요.', { key: 'cue:arrive', priority: 3, force: true });
         onFinish();
+        return;
       } else if (ev.type === 'offroute' && !state.offroute) {
         state.offroute = true;
         log('flag_offroute', { idx: state.idx });
-        speak('경로를 벗어났어요. 연속 안내로 전환할 수 있어요.', { key: 'flag-offroute', priority: 3, force: true });
-        vibrate([120, 80, 120]);
+      }
+    }
+
+    const wasOffroute = lastCue.state === 'OFF_ROUTE';
+    const cue = currentCue();
+    if (cue.state !== lastCue.state || state.idx !== lastCue.idx) {
+      lastCue = { idx: state.idx, state: cue.state };
+      if (wasOffroute && cue.state !== 'OFF_ROUTE') {
+        showCueToast('경로로 돌아왔어요');
+        if (cue.haptic) fireCue(cue);
+        else if (vibrateEnabled()) vibrate(CUE_HAPTIC.advance);
+      } else {
+        fireCue(cue);
       }
     }
     render();
@@ -231,10 +284,21 @@ export function createFlagMode({ route, callbacks = {} }) {
         t: Date.now(),
         confirmEntrance: true,
       });
-      state = { ...r.state, heading: state.heading, course: state.course, offroute: false, offsetLog: state.offsetLog };
+      state = {
+        ...r.state,
+        heading: state.heading,
+        course: state.course,
+        offroute: false,
+        offsetLog: state.offsetLog,
+        s: p?.s ?? state.s,
+        d: p?.d ?? state.d,
+        closest: p?.closest ?? state.closest,
+      };
       if (r.events.some((e) => e.type === 'arrived')) {
         active = false;
         flushOffsetLog();
+        if (vibrateEnabled()) vibrate(CUE_HAPTIC.arrive);
+        if (voiceEnabled()) speak('도착했어요.', { key: 'cue:arrive', priority: 3, force: true });
         onFinish();
         return;
       }
@@ -243,20 +307,22 @@ export function createFlagMode({ route, callbacks = {} }) {
       entranceNudges = now - lastNudgeAt <= 6000 ? entranceNudges + 1 : 1;
       lastNudgeAt = now;
       if (entranceNudges >= 2) {
-        log('flag_arrived_manual', { idx: state.idx, dist: Number.isFinite(dist) ? Math.round(dist) : null });
+        log('flag_arrived_manual', {
+          idx: state.idx,
+          dist: Number.isFinite(dist) ? Math.round(dist) : null,
+        });
         active = false;
         flushOffsetLog();
-        speak('입구 도착으로 처리할게요.', { key: 'flag-arrived-manual', priority: 3, force: true });
-        vibrate([200, 100, 200]);
+        if (vibrateEnabled()) vibrate(CUE_HAPTIC.arrive);
+        if (voiceEnabled()) speak('도착했어요.', { key: 'cue:arrive', priority: 3, force: true });
         onFinish();
         return;
       }
-      speak(
-        Number.isFinite(dist)
-          ? `아직 ${formatDistance(dist)} 남았어요. 입구가 맞으면 한 번 더 눌러주세요.`
-          : '아직 입구에 도착하지 않았어요. 입구가 맞으면 한 번 더 눌러주세요.',
-        { key: 'flag-entrance-far', priority: 2 },
-      );
+      const text = Number.isFinite(dist) && dist > 0.5
+        ? `아직 ${cueDistanceText(dist)} · 한 번 더 누르면 도착`
+        : '한 번 더 누르면 도착';
+      showCueToast(text, 2600);
+      if (vibrateEnabled()) vibrate(CUE_HAPTIC.confirm);
       render();
       return;
     }
@@ -276,25 +342,31 @@ export function createFlagMode({ route, callbacks = {} }) {
       offroute: false,
       offrouteSince: null,
     };
+    const cue = currentCue();
+    lastCue = { idx: state.idx, state: cue.state };
     log('flag_manual_next', { idx: state.idx, flag: nf.name });
+    showCueToast(`다음: ${nf.name}`);
+    if (cue.haptic) fireCue(cue);
+    else if (vibrateEnabled()) vibrate(CUE_HAPTIC.advance);
     render();
-    speak(`다음 깃발, ${nf.name}.`, { key: `flag:${nf.id}`, priority: 2 });
   }
 
   function switchContinuous() {
     active = false;
     flushOffsetLog();
+    clearCueToast();
     log('flag_switch_continuous', { idx: state.idx });
     onSwitchContinuous();
   }
 
   function stop() {
     flushOffsetLog();
+    clearCueToast();
     active = false;
   }
 
   function getState() {
-    return { ...state, active, flag: currentFlag()?.name || null };
+    return { ...state, active, flag: currentFlag()?.name || null, cue: currentCue() };
   }
 
   return { start, stop, onFix, onHeading, confirm, manualNext, switchContinuous, render, getState };

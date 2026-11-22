@@ -12,8 +12,22 @@
   <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
+  <svg class="sprite" aria-hidden="true" focusable="false" xmlns="http://www.w3.org/2000/svg">
+    <symbol id="icon-straight" viewBox="0 0 24 24"><path d="M12 20V4M12 4l-5 5M12 4l5 5"/></symbol>
+    <symbol id="icon-left" viewBox="0 0 24 24"><path d="M18 20v-6a4 4 0 0 0-4-4H6M6 10l4-4M6 10l4 4"/></symbol>
+    <symbol id="icon-right" viewBox="0 0 24 24"><path d="M6 20v-6a4 4 0 0 1 4-4h8M18 10l-4-4M18 10l-4 4"/></symbol>
+    <symbol id="icon-door" viewBox="0 0 24 24"><path d="M5 21h14M7 21V4h10v17M12 12h.01"/></symbol>
+    <symbol id="icon-return" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3"/></symbol>
+    <symbol id="icon-sound-on" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4zM16 8a5 5 0 0 1 0 8"/></symbol>
+    <symbol id="icon-sound-off" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4zM17 9l4 6M21 9l-4 6"/></symbol>
+  </svg>
+
   <header class="top">
     <div class="brand"><span class="mark">◎</span> GUIDE <small>보행 안내</small></div>
+    <button id="btn-voice" class="voice-toggle" type="button" aria-pressed="false" aria-label="음성 안내 켜기">
+      <svg class="icon" aria-hidden="true"><use id="voice-icon" href="#icon-sound-off"></use></svg>
+      <span>소리</span>
+    </button>
     <div id="phase-pill" class="pill" data-phase="IDLE">대기</div>
   </header>
 
@@ -77,7 +91,7 @@
         <ol id="preview-steps" class="steps"></ol>
       </div>
       <div class="card place">
-        <img id="entrance-photo" alt="입구 사진" />
+        <img id="entrance-photo" src="./data/photos/entrance.svg" alt="입구 사진" />
         <div>
           <b id="entrance-title"></b>
           <p id="entrance-note" class="sub"></p>
@@ -95,7 +109,7 @@
       <p class="eyebrow">ORIENTING</p>
       <h1 id="orient-title">출구를 등지고 서세요</h1>
       <p id="orient-sub" class="sub"></p>
-      <img id="orient-photo" class="photo" alt="출구 사진" />
+      <img id="orient-photo" class="photo" src="./data/photos/exit4.svg" alt="출구 사진" />
       <div id="orient-status" class="status">GPS 잡는 중…</div>
       <div class="row">
         <button id="btn-yes" class="primary big">맞아요</button>
@@ -141,21 +155,43 @@
 
     <!-- FLAG MODE -->
     <section id="screen-flags" class="screen">
-      <div class="flag-top">
-        <p class="eyebrow">FLAG MODE</p>
+      <div class="flag-bar">
+        <div class="flag-progress">
+          <div id="flag-dots" class="dots" aria-hidden="true"></div>
+          <span id="flag-count" class="flag-count">1/11</span>
+        </div>
         <div id="flag-badge" class="pill" hidden></div>
       </div>
-      <div class="arrow-stage">
+
+      <div id="glow-left" class="glow" aria-hidden="true"></div>
+      <div id="glow-right" class="glow" aria-hidden="true"></div>
+
+      <div id="arrow-stage" class="arrow-stage" data-tone="normal">
+        <svg class="ring" viewBox="0 0 100 100" aria-hidden="true">
+          <circle class="ring-track" cx="50" cy="50" r="46"></circle>
+          <circle id="flag-ring" class="ring-value" cx="50" cy="50" r="46" pathLength="100" stroke-dasharray="100" stroke-dashoffset="100"></circle>
+        </svg>
         <div id="flag-arrow" class="flag-arrow">
           <svg viewBox="0 0 100 100" aria-hidden="true"><path d="M50 6 L88 54 L64 54 L64 94 L36 94 L36 54 L12 54 Z" fill="currentColor"/></svg>
         </div>
       </div>
-      <h1 id="flag-name">다음 깃발</h1>
-      <p id="flag-distance" class="distance"></p>
-      <p id="flag-direction" class="sub"></p>
-      <p id="flag-status" class="status"></p>
+
+      <div class="cue-block">
+        <div class="cue-line">
+          <svg class="cue-icon" aria-hidden="true"><use id="cue-icon" href="#icon-straight"></use></svg>
+          <span id="cue-action" class="cue-action" aria-live="polite">직진</span>
+          <span id="cue-now" class="now-pill" hidden>지금</span>
+        </div>
+        <p id="flag-distance" class="cue-distance">—</p>
+        <p id="cue-detail" class="cue-detail"></p>
+        <p id="flag-bearing" class="bearing" hidden></p>
+      </div>
+
+      <p id="flag-status" class="status" hidden></p>
+      <div id="cue-toast" class="cue-toast" role="status" aria-live="polite"></div>
+
       <div class="row">
-        <button id="btn-flag-next" class="primary big">도착 / 다음</button>
+        <button id="btn-flag-next" class="secondary big">다음 이정표</button>
         <button id="btn-flag-continuous" class="secondary big">연속 안내</button>
       </div>
       <button id="btn-flag-stop" class="ghost">종료</button>
@@ -165,7 +201,7 @@
     <section id="screen-arrive" class="screen">
       <p class="eyebrow">ARRIVING</p>
       <h1 id="arrive-title">도착했어요</h1>
-      <img id="arrive-photo" class="photo" alt="입구 사진" />
+      <img id="arrive-photo" class="photo" src="./data/photos/entrance.svg" alt="입구 사진" />
       <p id="arrive-note" class="sub"></p>
       <button id="btn-arrived" class="primary big">도착 확인</button>
       <button id="btn-log" class="secondary">로그 저장 (JSON)</button>

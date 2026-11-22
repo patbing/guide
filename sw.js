@@ -1,4 +1,4 @@
-const CACHE = 'guide-v5';
+const CACHE = 'guide-v6';
 const ASSETS = [
   './',
   './index.html',
@@ -12,6 +12,7 @@ const ASSETS = [
   './js/landmark.js',
   './js/guidance.js',
   './js/flags.js',
+  './js/cue.js',
   './js/flag-mode.js',
   './js/flag-ui.js',
   './js/speech.js',

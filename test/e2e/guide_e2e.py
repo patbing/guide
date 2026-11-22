@@ -4,10 +4,18 @@ from playwright.sync_api import sync_playwright
 
 URL = "http://127.0.0.1:8792/"
 errs = []
+SPY = """
+window.__speech = [];
+try {
+  window.speechSynthesis.speak = (u) => { window.__speech.push(u.text); };
+  window.speechSynthesis.cancel = () => {};
+} catch (e) {}
+"""
 
 with sync_playwright() as p:
     b = p.chromium.launch(channel="msedge", headless=True)
     page = b.new_page(viewport={"width": 390, "height": 844}, device_scale_factor=1)
+    page.add_init_script(SPY)
     page.on("console", lambda m: errs.append(m.text) if m.type == "error" else None)
     page.on("pageerror", lambda e: errs.append(str(e)))
     page.goto(URL, wait_until="load", timeout=30000)
@@ -53,6 +61,9 @@ with sync_playwright() as p:
     print("console errors:", len(errs))
     for e in errs[:5]:
         print(" ", e[:160])
+
+    print("speech default:", page.evaluate("window.__speech"))
+    assert page.evaluate("window.__speech") == [], "continuous guidance must be silent by default"
 
     page.screenshot(path=r"C:\Users\J\AppData\Local\Temp\opencode\guide_390.png", full_page=False)
 
