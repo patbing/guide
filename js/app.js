@@ -604,6 +604,7 @@ function bind() {
   $('#btn-mic').addEventListener('click', mic);
   $('#btn-mic-orient')?.addEventListener('click', mic);
   $('#btn-arrived').addEventListener('click', finish);
+  $('#btn-log')?.addEventListener('click', () => { if (state.session) download(state.session); });
   $('#btn-debug')?.addEventListener('click', () => { $('#debug').hidden = !$('#debug').hidden; });
 }
 
