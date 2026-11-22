@@ -9,7 +9,11 @@
     "lat": 37.5139566,
     "lng": 127.0161829,
     "address": "서울 서초구 잠원동",
-    "station": { "name": "잠원역", "line": "3호선", "exitNo": "4" }
+    "station": {
+      "name": "잠원역",
+      "line": "3호선",
+      "exitNo": "4"
+    }
   },
   "exit": {
     "no": "4",
@@ -20,32 +24,110 @@
     "note": "출구를 등지고 서세요. 사진은 현장 확인 전 임시 이미지입니다."
   },
   "polyline": [
-    [37.512956, 127.011557],
-    [37.51342, 127.012522],
-    [37.513816, 127.013348],
-    [37.51392, 127.013371],
-    [37.514643, 127.013571],
-    [37.514607, 127.013816],
-    [37.514596, 127.013932],
-    [37.514609, 127.014026],
-    [37.514647, 127.01416],
-    [37.514728, 127.014377],
-    [37.514762, 127.01445],
-    [37.514826, 127.014501],
-    [37.51496, 127.014536],
-    [37.515038, 127.014557],
-    [37.515008, 127.014707],
-    [37.514956, 127.015029],
-    [37.514941, 127.015184],
-    [37.514951, 127.015429],
-    [37.514982, 127.015713],
-    [37.514988, 127.015772],
-    [37.514997, 127.015878],
-    [37.515018, 127.015978],
-    [37.515065, 127.016229],
-    [37.514869, 127.016181],
-    [37.514424, 127.016181],
-    [37.513962, 127.016121]
+    [
+      37.512956,
+      127.011557
+    ],
+    [
+      37.51342,
+      127.012522
+    ],
+    [
+      37.513816,
+      127.013348
+    ],
+    [
+      37.51392,
+      127.013371
+    ],
+    [
+      37.514643,
+      127.013571
+    ],
+    [
+      37.514607,
+      127.013816
+    ],
+    [
+      37.514596,
+      127.013932
+    ],
+    [
+      37.514609,
+      127.014026
+    ],
+    [
+      37.514647,
+      127.01416
+    ],
+    [
+      37.514728,
+      127.014377
+    ],
+    [
+      37.514762,
+      127.01445
+    ],
+    [
+      37.514826,
+      127.014501
+    ],
+    [
+      37.51496,
+      127.014536
+    ],
+    [
+      37.515038,
+      127.014557
+    ],
+    [
+      37.515008,
+      127.014707
+    ],
+    [
+      37.514956,
+      127.015029
+    ],
+    [
+      37.514941,
+      127.015184
+    ],
+    [
+      37.514951,
+      127.015429
+    ],
+    [
+      37.514982,
+      127.015713
+    ],
+    [
+      37.514988,
+      127.015772
+    ],
+    [
+      37.514997,
+      127.015878
+    ],
+    [
+      37.515018,
+      127.015978
+    ],
+    [
+      37.515065,
+      127.016229
+    ],
+    [
+      37.514869,
+      127.016181
+    ],
+    [
+      37.514424,
+      127.016181
+    ],
+    [
+      37.513962,
+      127.016121
+    ]
   ],
   "lengthM": 667,
   "steps": [
@@ -56,8 +138,14 @@
       "turn": "S",
       "bearingOut": 59,
       "text": "4번 출구로 나와 잠원로4길을 따라 북동쪽으로 184m",
-      "landmarkIds": ["lm-exit", "lm-nice"],
-      "at": [37.512956, 127.011557]
+      "landmarkIds": [
+        "lm-exit",
+        "lm-nice"
+      ],
+      "at": [
+        37.512956,
+        127.011557
+      ]
     },
     {
       "idx": 1,
@@ -67,7 +155,10 @@
       "bearingOut": 11,
       "text": "나루터로4길로 좌회전해 94m",
       "landmarkIds": [],
-      "at": [37.513816, 127.013348]
+      "at": [
+        37.513816,
+        127.013348
+      ]
     },
     {
       "idx": 2,
@@ -77,7 +168,10 @@
       "bearingOut": 100,
       "text": "우회전해 115m",
       "landmarkIds": [],
-      "at": [37.514643, 127.013571]
+      "at": [
+        37.514643,
+        127.013571
+      ]
     },
     {
       "idx": 3,
@@ -86,8 +180,14 @@
       "turn": "R",
       "bearingOut": 103,
       "text": "나루터로에서 우회전해 151m",
-      "landmarkIds": ["lm-bonjuk", "lm-dio"],
-      "at": [37.515038, 127.014557]
+      "landmarkIds": [
+        "lm-bonjuk",
+        "lm-dio"
+      ],
+      "at": [
+        37.515038,
+        127.014557
+      ]
     },
     {
       "idx": 4,
@@ -96,8 +196,14 @@
       "turn": "R",
       "bearingOut": 191,
       "text": "나루터로10길로 우회전해 123m",
-      "landmarkIds": ["lm-chwihyang", "lm-cafepella"],
-      "at": [37.515065, 127.016229]
+      "landmarkIds": [
+        "lm-chwihyang",
+        "lm-cafepella"
+      ],
+      "at": [
+        37.515065,
+        127.016229
+      ]
     },
     {
       "idx": 5,
@@ -106,81 +212,127 @@
       "turn": "S",
       "bearingOut": 0,
       "text": "왼편에 르 파운드",
-      "landmarkIds": ["lm-lefour"],
-      "at": [37.513962, 127.016121]
+      "landmarkIds": [
+        "lm-lefour"
+      ],
+      "at": [
+        37.513962,
+        127.016121
+      ]
     }
   ],
   "landmarks": [
     {
       "id": "lm-exit",
       "name": "잠원역 4번 출구",
-      "aliases": ["4번출구", "잠원역4번출구", "잠원역4번"],
+      "aliases": [
+        "4번출구",
+        "잠원역4번출구",
+        "잠원역4번"
+      ],
       "category": "subway_exit",
       "lat": 37.5130487,
       "lng": 127.0114866,
       "side": "ahead",
-      "visibleFromM": [0, 40],
+      "visibleFromM": [
+        0,
+        40
+      ],
       "photo": "data/photos/exit4.svg"
     },
     {
       "id": "lm-nice",
       "name": "나이스가이 메이플자이점",
-      "aliases": ["나이스가이", "메이플자이"],
+      "aliases": [
+        "나이스가이",
+        "메이플자이"
+      ],
       "category": "beauty",
       "lat": 37.512675,
       "lng": 127.011667,
       "side": "R",
-      "visibleFromM": [0, 60]
+      "visibleFromM": [
+        0,
+        60
+      ]
     },
     {
       "id": "lm-bonjuk",
       "name": "본죽",
-      "aliases": ["본죽"],
+      "aliases": [
+        "본죽"
+      ],
       "category": "restaurant",
       "lat": 37.514912,
       "lng": 127.014317,
       "side": "L",
-      "visibleFromM": [300, 430]
+      "visibleFromM": [
+        300,
+        430
+      ]
     },
     {
       "id": "lm-dio",
       "name": "디오연세치과",
-      "aliases": ["디오연세", "치과"],
+      "aliases": [
+        "디오연세",
+        "치과"
+      ],
       "category": "dentist",
       "lat": 37.51526,
       "lng": 127.0146,
       "side": "L",
-      "visibleFromM": [330, 430]
+      "visibleFromM": [
+        330,
+        430
+      ]
     },
     {
       "id": "lm-chwihyang",
       "name": "취향",
-      "aliases": ["취향"],
+      "aliases": [
+        "취향"
+      ],
       "category": "restaurant",
       "lat": 37.5152118,
       "lng": 127.016436,
       "side": "L",
-      "visibleFromM": [500, 620]
+      "visibleFromM": [
+        500,
+        620
+      ]
     },
     {
       "id": "lm-cafepella",
       "name": "카페쁄라",
-      "aliases": ["카페쁄라", "쁄라"],
+      "aliases": [
+        "카페쁄라",
+        "쁄라"
+      ],
       "category": "cafe",
       "lat": 37.5153302,
       "lng": 127.016354,
       "side": "L",
-      "visibleFromM": [500, 620]
+      "visibleFromM": [
+        500,
+        620
+      ]
     },
     {
       "id": "lm-lefour",
       "name": "르 파운드",
-      "aliases": ["르파운드", "르 파운드"],
+      "aliases": [
+        "르파운드",
+        "르 파운드"
+      ],
       "category": "cafe",
       "lat": 37.5139566,
       "lng": 127.0161829,
       "side": "L",
-      "visibleFromM": [600, 667],
+      "visibleFromM": [
+        600,
+        667
+      ],
       "photo": "data/photos/entrance.svg"
     }
   ],
@@ -188,22 +340,33 @@
     {
       "id": "poi-nail",
       "name": "네일 레 비쥬",
-      "aliases": ["네일레비쥬", "네일"],
+      "aliases": [
+        "네일레비쥬",
+        "네일"
+      ],
       "category": "beauty",
       "lat": 37.5139535,
       "lng": 127.01625,
       "side": "L",
-      "visibleFromM": [620, 667]
+      "visibleFromM": [
+        620,
+        667
+      ]
     },
     {
       "id": "poi-livingfood",
       "name": "리빙푸드(본점)",
-      "aliases": ["리빙푸드"],
+      "aliases": [
+        "리빙푸드"
+      ],
       "category": "restaurant",
       "lat": 37.513949,
       "lng": 127.015935,
       "side": "R",
-      "visibleFromM": [620, 667]
+      "visibleFromM": [
+        620,
+        667
+      ]
     }
   ],
   "entrance": {
@@ -213,5 +376,226 @@
     "signText": "르 파운드",
     "photo": "data/photos/entrance.svg",
     "note": "현장 확인 필요 · 입구/층/간판"
-  }
+  },
+  "flags": [
+    {
+      "id": "f0",
+      "seq": 0,
+      "kind": "start",
+      "name": "잠원역 4번 출구",
+      "lat": 37.512956,
+      "lng": 127.011557,
+      "atM": 0,
+      "radiusM": 20,
+      "bearingIn": 59,
+      "bearingOut": 59,
+      "landmark": {
+        "text": "4번 출구",
+        "side": "ahead"
+      },
+      "note": "출구를 등지고 서세요",
+      "verified": {
+        "method": "draft",
+        "at": "2026-11-23"
+      }
+    },
+    {
+      "id": "f1",
+      "seq": 1,
+      "kind": "via",
+      "name": "잠원로4길 60m",
+      "lat": 37.513236,
+      "lng": 127.012139,
+      "atM": 60,
+      "radiusM": 20,
+      "bearingIn": 59,
+      "bearingOut": 59,
+      "verified": {
+        "method": "draft",
+        "at": "2026-11-23"
+      }
+    },
+    {
+      "id": "f2",
+      "seq": 2,
+      "kind": "via",
+      "name": "잠원로4길 120m",
+      "lat": 37.513515,
+      "lng": 127.012721,
+      "atM": 120,
+      "radiusM": 20,
+      "bearingIn": 59,
+      "bearingOut": 59,
+      "verified": {
+        "method": "draft",
+        "at": "2026-11-23"
+      }
+    },
+    {
+      "id": "f3",
+      "seq": 3,
+      "kind": "turn",
+      "name": "나루터로4길 좌회전",
+      "lat": 37.513813,
+      "lng": 127.013342,
+      "atM": 184,
+      "radiusM": 20,
+      "bearingIn": 59,
+      "bearingOut": 10,
+      "landmark": {
+        "text": "나루터로4길",
+        "side": "L"
+      },
+      "verified": {
+        "method": "draft",
+        "at": "2026-11-23"
+      }
+    },
+    {
+      "id": "f4",
+      "seq": 4,
+      "kind": "via",
+      "name": "나루터로4길 51m",
+      "lat": 37.514259,
+      "lng": 127.013465,
+      "atM": 235,
+      "radiusM": 20,
+      "bearingIn": 12,
+      "bearingOut": 12,
+      "verified": {
+        "method": "draft",
+        "at": "2026-11-23"
+      }
+    },
+    {
+      "id": "f5",
+      "seq": 5,
+      "kind": "turn",
+      "name": "우회전 골목",
+      "lat": 37.514637,
+      "lng": 127.013569,
+      "atM": 278,
+      "radiusM": 20,
+      "bearingIn": 12,
+      "bearingOut": 100,
+      "landmark": {
+        "text": "우회전 골목",
+        "side": "R"
+      },
+      "verified": {
+        "method": "draft",
+        "at": "2026-11-23"
+      }
+    },
+    {
+      "id": "f6",
+      "seq": 6,
+      "kind": "via",
+      "name": "나루터로 57m",
+      "lat": 37.514659,
+      "lng": 127.014191,
+      "atM": 335,
+      "radiusM": 20,
+      "bearingIn": 65,
+      "bearingOut": 65,
+      "verified": {
+        "method": "draft",
+        "at": "2026-11-23"
+      }
+    },
+    {
+      "id": "f7",
+      "seq": 7,
+      "kind": "turn",
+      "name": "나루터로 우회전",
+      "lat": 37.515037,
+      "lng": 127.014557,
+      "atM": 393,
+      "radiusM": 20,
+      "bearingIn": 12,
+      "bearingOut": 104,
+      "landmark": {
+        "text": "본죽",
+        "side": "R"
+      },
+      "verified": {
+        "method": "draft",
+        "at": "2026-11-23"
+      }
+    },
+    {
+      "id": "f8",
+      "seq": 8,
+      "kind": "via",
+      "name": "나루터로 75m",
+      "lat": 37.51495,
+      "lng": 127.015394,
+      "atM": 468,
+      "radiusM": 20,
+      "bearingIn": 87,
+      "bearingOut": 87,
+      "verified": {
+        "method": "draft",
+        "at": "2026-11-23"
+      }
+    },
+    {
+      "id": "f9",
+      "seq": 9,
+      "kind": "turn",
+      "name": "나루터로10길 우회전",
+      "lat": 37.515055,
+      "lng": 127.016227,
+      "atM": 544,
+      "radiusM": 20,
+      "bearingIn": 77,
+      "bearingOut": 191,
+      "landmark": {
+        "text": "취향",
+        "side": "R"
+      },
+      "verified": {
+        "method": "draft",
+        "at": "2026-11-23"
+      }
+    },
+    {
+      "id": "f10",
+      "seq": 10,
+      "kind": "via",
+      "name": "입구 67m",
+      "lat": 37.514555,
+      "lng": 127.016181,
+      "atM": 600,
+      "radiusM": 20,
+      "bearingIn": 180,
+      "bearingOut": 180,
+      "verified": {
+        "method": "draft",
+        "at": "2026-11-23"
+      }
+    },
+    {
+      "id": "f11",
+      "seq": 11,
+      "kind": "entrance",
+      "name": "르 파운드 입구",
+      "lat": 37.513964,
+      "lng": 127.016121,
+      "atM": 666,
+      "radiusM": 12,
+      "bearingIn": 186,
+      "bearingOut": 186,
+      "landmark": {
+        "text": "르 파운드",
+        "side": "ahead"
+      },
+      "floor": "1F",
+      "photo": "data/photos/entrance.svg",
+      "verified": {
+        "method": "draft",
+        "at": "2026-11-23"
+      }
+    }
+  ]
 }

@@ -53,6 +53,24 @@ python test/e2e/chat_e2e.py
 5. **입구 모드(ARRIVING)**: 25m 전 입구 사진·층·간판, 도착 확인.
 6. **로그**: 이벤트/위치/질문/역방향/이탈을 기록하고 `#arrive-summary`에 요약.
 
+## 깃발 화살표 모드 (`?mode=flags`)
+
+AR·카메라 없이 **다음 이정표까지의 화살표 + 거리**만 보여주는 보조 모드입니다.
+기본값은 연속 안내이고, 경로 미리보기의 **깃발 화살표** 버튼 또는 `?route=...&mode=flags`로 시작합니다.
+
+- 경로 위 이정표에 `flags[]`(12개)를 미리 꽂아 둡니다. AI는 런타임에 필요 없습니다.
+- 앱은 기존 `router.progress`의 `s`/`d`와 하나뿐인 GPS/나침반 watch를 **공유**합니다.
+- 화살표는 현재 위치 → 다음 깃발 방위에서 폰 heading을 뺀 각도입니다.
+- 반경(기본 20m, 입구 12m) 안에 2회 들어오면 다음 깃발로 자동 진행합니다.
+  `turn`/`cross`는 `s ≥ atM + 8m`도 만족해야 하고, `entrance`는 **도착 확인 버튼**이 필요합니다.
+  GPS가 나쁜데 입구가 확실하면 **6초 안에 두 번** 누르면 수동 도착으로 처리합니다.
+- 나침반이 `absolute=false`면 10m 이상 이동한 방향을 기준으로 화살표를 유지하고 "나침반 없음" 배지를 띄웁니다.
+- 25m 이상 이탈이 10초 지속되면 경고를 내고 **연속 안내로 전환**할 수 있습니다.
+  경로로 복귀하면 배지가 자동으로 사라집니다. 이탈 중에는 `s` 기반 건너뛰기를 하지 않습니다.
+- heading offset 학습은 v1에서 **로그만** 남기고 화살표에 적용하지 않습니다(양성 피드백 방지).
+- 건물 반대편을 가리키지 않도록 `validateFlags`가 폴리라인 8m 이탈·90m 초과 간격을 검사합니다.
+- 지하/실내에서는 동작하지 않습니다. 지상 출구부터 시작합니다.
+
 ## AI 도구 (MCP + skill)
 
 독립 채팅 앱이 아니라 **OpenCode/Paseo의 AI가 호출하는 도구**입니다.
@@ -69,8 +87,8 @@ python test/e2e/chat_e2e.py
 | `nav_location` | 위치 사용 가능 여부. PC 도구라 폰 GPS는 직접 못 읽음 → AI가 역/동네를 물어봄 |
 | `nav_search_places` | 주변 카페/맛집 후보(거리·도보 시간) |
 | `nav_place` | 장소 상세 |
-| `nav_route` | 도보 경로. 르 파운드는 6단계 + 가이드 딥링크 |
-| `nav_open_guide` | 가이드 앱 링크 (`?route=jamwon4-le-four`) |
+| `nav_route` | 도보 경로. 르 파운드는 6단계 + 깃발 12개 + 연속/깃발 딥링크 |
+| `nav_open_guide` | 가이드 앱 링크. `mode: continuous`(기본) / `flags` |
 
 예: OpenCode에서 "잠원역 근처 카페 추천하고 르 파운드로 안내해줘"라고 하면
 AI가 `nav_search_places` → `nav_route` → `nav_open_guide`를 호출하고,
@@ -100,6 +118,9 @@ guide/
   js/landmark.js   발화 파싱·POI 점수화
   js/lexicon.js    브랜드/카테고리/관계 사전
   js/guidance.js   안내 이벤트/템플릿
+  js/flags.js      깃발 순수 로직·검증 (DOM/센서 없음)
+  js/flag-mode.js  깃발 컨트롤러 (reducer→UI/TTS)
+  js/flag-ui.js    깃발 화면 DOM 렌더
   js/speech.js     TTS·진동·STT
   js/location.js   GPS·나침반·WakeLock
   js/storage.js    localStorage
@@ -115,5 +136,7 @@ guide/
 ## 다음
 
 - 현장에서 이 경로를 3회 걷고(정상/반대/골목 놓침) 로그로 지표 산출.
+- 깃발 모드 지표: 화살표 오차 중앙값 ≤25°, 잘못된 진행 0회, 회전 실수 연속 모드 이하, 입구 도착률 100%.
+  **p80 >45°면 깃발 모드를 보류**하고 연속 안내를 기본으로 유지합니다.
 - 성공 지표: 첫 방향 확정 ≤20초, 역방향 0회, 잘못 꺾음 0회, 100m당 질문 ≤0.5, 입구 헤맴 ≤30초.
 - 이후: 100곳 데이터, Capacitor(백그라운드/TTS), LLM 도구 레이어(선택).

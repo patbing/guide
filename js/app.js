@@ -7,11 +7,12 @@ import {
 import { parseUtterance, resolveLandmark } from './landmark.js';
 import { startLocation, stopLocation, requestOrientationPermission, getOnce } from './location.js';
 import { speak, vibrate, initSpeech, startSTT, stopSTT, sttAvailable } from './speech.js';
-import { saveRoute, loadCachedRoute } from './storage.js';
+import { saveRoute, loadCachedRoute, saveLog } from './storage.js';
 import { startSession, event, summary, download } from './log.js';
 import { distance, bearing, angleDiff, formatDistance } from './geo.js';
 import { createGuidance, tick, askLandmark, landmarkName } from './guidance.js';
 import { DEMO_ORIGIN, DEMO_POIS, detectIntent, matchPlace, rankCandidates, categoryLabel, kakaoRouteLinks } from './chat.js';
+import { createFlagMode } from './flag-mode.js';
 
 const ROUTE_URL = './data/routes/jamwon4-le-four.json';
 const $ = (sel) => document.querySelector(sel);
@@ -36,6 +37,7 @@ const state = {
   previewMap: null,
   guideMap: null,
   locationStarted: false,
+  flagMode: null,
   debug: new URLSearchParams(location.search).has('debug'),
   chat: {
     messages: [],
@@ -69,6 +71,7 @@ function render() {
   else if (phase === 'PREVIEW') showScreen('screen-preview');
   else if (['LOCATING', 'ORIENTING', 'LOST'].includes(phase)) { showScreen('screen-orient'); renderOrient(); }
   else if (['GUIDING', 'OFF_ROUTE'].includes(phase)) { showScreen('screen-guide'); renderGuide(); }
+  else if (phase === 'FLAGS') { showScreen('screen-flags'); state.flagMode?.render(); }
   else if (['ARRIVING', 'ARRIVED'].includes(phase)) { showScreen('screen-arrive'); renderArrive(); }
 }
 
@@ -76,6 +79,7 @@ function phaseLabel(p) {
   return {
     IDLE: '대기', PREVIEW: '경로', LOCATING: '위치 잡는 중', ORIENTING: '방향 확인',
     GUIDING: '안내 중', OFF_ROUTE: '경로 이탈', ARRIVING: '곧 도착', ARRIVED: '도착', LOST: '위치 재확인',
+    FLAGS: '깃발 안내',
   }[p] || p;
 }
 
@@ -170,6 +174,10 @@ async function begin() {
   setPhase('LOCATING');
   renderOrient();
   say('출구를 등지고 서세요. 준비되면 10미터만 걸어보세요.', { key: 'orient-intro', priority: 3 });
+  await startSensors();
+}
+
+async function startSensors() {
   await requestOrientationPermission();
   startLocation({
     onFix,
@@ -186,12 +194,57 @@ async function begin() {
   state.locationStarted = true;
 }
 
+/* ---------------- flag mode ---------------- */
+
+async function beginFlags() {
+  if (!state.route?.flags?.length) {
+    toast('이 경로에는 깃발 데이터가 없어요');
+    return;
+  }
+  if (state.phase === 'FLAGS' && state.flagMode) return;
+  state.session = startSession(state.route.id);
+  state.startedAt = Date.now();
+  state.belief = createBelief();
+  state.questions = 0;
+  state.question = null;
+  state.pendingCandidates = null;
+  state.lastCompassAt = 0;
+  state.lastMoveFix = null;
+  state.progress = null;
+  if (!state.locationStarted) await startSensors();
+  state.flagMode?.stop();
+  state.flagMode = createFlagMode({
+    route: state.route,
+    callbacks: {
+      speak: (text, opts) => say(text, opts),
+      vibrate,
+      log: (type, payload) => logEvent(type, payload),
+      onFinish: () => { state.flagMode = null; finish(); },
+      onSwitchContinuous: () => switchToContinuous(),
+    },
+  });
+  setPhase('FLAGS');
+  state.flagMode.start();
+}
+
+function switchToContinuous() {
+  state.flagMode?.stop();
+  state.flagMode = null;
+  state.lastMoveFix = state.fix;
+  logEvent('switch_continuous', {});
+  setPhase('GUIDING');
+  say('연속 안내로 전환합니다.', { key: 'flag-to-continuous', priority: 3, force: true });
+  if (state.fix) guideStep(state.fix);
+  else renderGuide();
+}
+
 function onFix(fix) {
   state.fix = fix;
   if (Date.now() - state.lastFixLogAt > 1000) {
     state.lastFixLogAt = Date.now();
     logEvent('fix', { lat: fix.lat, lng: fix.lng, acc: fix.acc });
   }
+  if (state.phase === 'FLAGS') { state.flagMode?.onFix(fix); return; }
   if (state.phase === 'LOCATING') locateStep(fix);
   else if (state.phase === 'ORIENTING') orientStep(fix);
   else if (state.phase === 'GUIDING' || state.phase === 'OFF_ROUTE') guideStep(fix);
@@ -201,6 +254,7 @@ function onFix(fix) {
 
 function onHeading(h) {
   state.heading = h;
+  if (state.phase === 'FLAGS') { state.flagMode?.onHeading(h); return; }
   if (state.phase === 'ORIENTING' && h.absolute && (h.accuracyDeg == null || h.accuracyDeg <= 30)) {
     const exit = { lat: state.route.exit.lat, lng: state.route.exit.lng };
     if (state.fix && distance(state.fix, exit) > 15 && Date.now() - state.lastCompassAt > 5000) {
@@ -480,6 +534,8 @@ function reanchor() {
 }
 
 function stopAll() {
+  state.flagMode?.stop();
+  state.flagMode = null;
   stopLocation();
   stopSTT();
   state.locationStarted = false;
@@ -738,6 +794,10 @@ function bind() {
   $('#btn-start').addEventListener('click', loadPilot);
   $('#btn-home').addEventListener('click', () => setPhase('IDLE'));
   $('#btn-begin').addEventListener('click', begin);
+  $('#btn-flags').addEventListener('click', beginFlags);
+  $('#btn-flag-next').addEventListener('click', () => state.flagMode?.confirm());
+  $('#btn-flag-continuous').addEventListener('click', () => state.flagMode?.switchContinuous());
+  $('#btn-flag-stop').addEventListener('click', stopAll);
   $('#btn-yes').addEventListener('click', () => answerPhoto(true));
   $('#btn-no').addEventListener('click', () => answerPhoto(false));
   $('#btn-walk').addEventListener('click', () => {
@@ -819,6 +879,10 @@ function exposeDebug() {
     tick: () => guideStep(state.fix),
     phase: () => state.phase,
     route: () => state.route,
+    beginFlags,
+    flags: () => state.flagMode?.getState() || null,
+    flagNext: () => state.flagMode?.confirm(),
+    flagSwitch: () => state.flagMode?.switchContinuous(),
     chat: handleChat,
     chatState: state.chat,
     reset: () => { stopAll(); state.route = null; state.fix = null; state.belief = createBelief(); setPhase('IDLE'); },
@@ -842,7 +906,10 @@ function init() {
   render();
   const params = new URLSearchParams(location.search);
   if (params.get('route') === 'jamwon4-le-four' || params.get('dest') === 'le-four') {
-    loadPilot();
+    const wantsFlags = params.get('mode') === 'flags';
+    loadPilot().then(() => {
+      if (wantsFlags && state.phase === 'PREVIEW') return beginFlags();
+    });
   }
 }
 

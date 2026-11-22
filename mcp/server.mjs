@@ -35,7 +35,7 @@ const TOOLS = [
   },
   {
     name: 'nav_route',
-    description: '선택한 장소까지 도보 경로를 조회한다. 정밀 안내가 준비된 곳은 단계와 guide 딥링크를 반환한다.',
+    description: '선택한 장소까지 도보 경로를 조회한다. 정밀 안내가 준비된 곳은 단계·깃발·guide 딥링크를 반환한다.',
     inputSchema: {
       type: 'object',
       properties: {
@@ -49,10 +49,17 @@ const TOOLS = [
   },
   {
     name: 'nav_open_guide',
-    description: '가이드 앱에서 마지막 100m 안내를 열 수 있는 링크를 만든다. 정밀 경로가 없으면 카카오 도보 링크를 반환한다.',
+    description: '가이드 앱에서 마지막 100m 안내를 열 수 있는 링크를 만든다. mode=flags면 깃발 화살표 모드로 연다. 정밀 경로가 없으면 카카오 도보 링크를 반환한다.',
     inputSchema: {
       type: 'object',
-      properties: { to: { type: 'string', description: '장소 id 또는 이름' } },
+      properties: {
+        to: { type: 'string', description: '장소 id 또는 이름' },
+        mode: {
+          type: 'string',
+          enum: ['continuous', 'flags'],
+          description: '안내 방식. continuous=연속 안내(기본), flags=다음 이정표까지 화살표+거리',
+        },
+      },
       required: ['to'],
     },
   },
@@ -156,8 +163,17 @@ function toolResult(name, args = {}) {
         mode: 'walk',
         lengthM: route.lengthM,
         steps: route.steps.map((s) => ({ atM: s.atM, turn: s.turn, text: s.text })),
+        flags: (route.flags || []).map((f) => ({
+          id: f.id,
+          kind: f.kind,
+          name: f.name,
+          atM: f.atM,
+          radiusM: f.radiusM,
+          landmark: f.landmark?.text || null,
+        })),
         deepLink: `${GUIDE_BASE}?route=jamwon4-le-four`,
-        note: '정밀 안내(출구 180°, 랜드마크, 입구) 준비됨. 링크를 열어 안내를 시작하세요.',
+        deepLinkFlags: `${GUIDE_BASE}?route=jamwon4-le-four&mode=flags`,
+        note: '정밀 안내(출구 180°, 랜드마크, 입구) 준비됨. 깃발 화살표 모드는 deepLinkFlags를 쓰세요.',
       };
     }
     const r = rankCandidates(origin, 'all', [p], 1, 0)[0];
@@ -178,9 +194,13 @@ function toolResult(name, args = {}) {
     const p = findPlace(args.to);
     if (!p) return { error: 'NOT_FOUND', message: `${args.to}를 찾지 못했습니다.` };
     if (p.routeId === 'jamwon4-le-four') {
+      const flags = args.mode === 'flags';
       return {
-        url: `${GUIDE_BASE}?route=jamwon4-le-four`,
-        note: '가이드 앱에서 경로 미리보기 → 출발 → 출구 180° → 입구 안내가 시작됩니다.',
+        url: `${GUIDE_BASE}?route=jamwon4-le-four${flags ? '&mode=flags' : ''}`,
+        mode: flags ? 'flags' : 'continuous',
+        note: flags
+          ? '깃발 화살표 모드로 엽니다. 다음 이정표까지 화살표+거리만 보여주고, 반경에 들면 다음 깃발로 넘어갑니다.'
+          : '가이드 앱에서 경로 미리보기 → 출발 → 출구 180° → 입구 안내가 시작됩니다.',
       };
     }
     const links = kakaoRouteLinks(DEMO_ORIGIN, p);

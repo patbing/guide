@@ -136,6 +136,15 @@ button { font: inherit; cursor: pointer; border: 0; border-radius: 14px; min-hei
 .chatmap { height: 140px; flex: none; }
 .chat-foot { display: flex; flex-direction: column; gap: 4px; padding-top: 2px; }
 .chat-foot .ghost { text-align: left; }
+.flag-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.arrow-stage { width: min(72vw, 340px); aspect-ratio: 1; margin: 0 auto; border-radius: 50%; border: 1px solid var(--line); display: grid; place-items: center; background: radial-gradient(circle at 50% 42%, rgba(242, 184, 75, .16), rgba(0, 0, 0, 0) 62%); }
+.flag-arrow { width: 58%; color: var(--accent); transition: transform .15s linear; filter: drop-shadow(0 10px 24px rgba(0, 0, 0, .35)); will-change: transform; }
+.flag-arrow svg { width: 100%; height: auto; display: block; }
+.flag-arrow.no-heading { opacity: .28; }
+#flag-badge[data-kind="danger"] { color: #fff; background: var(--danger); border-color: var(--danger); }
+#flag-badge[data-kind="warn"] { color: #2a1c05; background: var(--accent); border-color: var(--accent); }
+#flag-badge[data-kind="ok"] { color: var(--bg); background: #8fd3a8; border-color: #8fd3a8; }
+#screen-flags h1 { font-size: 24px; }
 .debug { max-width: 560px; margin: 0 auto 24px; padding: 0 16px; color: var(--muted); font-size: 11px; }
 
 .debug summary { cursor: pointer; }

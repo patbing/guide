@@ -48,11 +48,18 @@ console.log('search:', searchData.results.map((r) => `${r.name}(${r.distanceM}m)
 
 const route = await call('tools/call', { name: 'nav_route', arguments: { to: 'le-four' } });
 const routeData = JSON.parse(route.result.content[0].text);
-console.log('route:', routeData.name, routeData.lengthM, 'steps', routeData.steps.length, 'link', routeData.deepLink);
+console.log('route:', routeData.name, routeData.lengthM, 'steps', routeData.steps.length, 'flags', routeData.flags.length);
+console.log('  continuous:', routeData.deepLink);
+console.log('  flags:', routeData.deepLinkFlags);
 
 const guide = await call('tools/call', { name: 'nav_open_guide', arguments: { to: 'le-four' } });
 const guideData = JSON.parse(guide.result.content[0].text);
-console.log('guide:', guideData.url);
+console.log('guide:', guideData.url, guideData.mode);
+
+const guideFlags = await call('tools/call', { name: 'nav_open_guide', arguments: { to: 'le-four', mode: 'flags' } });
+const guideFlagsData = JSON.parse(guideFlags.result.content[0].text);
+console.log('guide flags:', guideFlagsData.url, guideFlagsData.mode);
+if (!guideFlagsData.url.endsWith('&mode=flags')) throw new Error('flags deep link is wrong');
 
 const loc = await call('tools/call', { name: 'nav_location', arguments: {} });
 const locData = JSON.parse(loc.result.content[0].text);
