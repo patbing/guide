@@ -163,3 +163,39 @@ export function stopLocation() {
 export function lastKnown() {
   return { fix: lastFix, heading: lastHeading };
 }
+
+/** 채팅에서 쓰는 1회 위치 조회. 실패/타임아웃이면 reject. */
+export function getOnce(timeoutMs = 8000) {
+  return new Promise((resolve, reject) => {
+    if (!navigator.geolocation) {
+      reject(new Error('no_geolocation'));
+      return;
+    }
+    let done = false;
+    const timer = setTimeout(() => {
+      if (done) return;
+      done = true;
+      reject(new Error('timeout'));
+    }, timeoutMs);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        resolve({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+          acc: pos.coords.accuracy,
+          label: '현재 위치',
+        });
+      },
+      (err) => {
+        if (done) return;
+        done = true;
+        clearTimeout(timer);
+        reject(new Error(err.message || 'geolocation_error'));
+      },
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: timeoutMs },
+    );
+  });
+}
