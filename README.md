@@ -53,6 +53,31 @@ python test/e2e/chat_e2e.py
 5. **입구 모드(ARRIVING)**: 25m 전 입구 사진·층·간판, 도착 확인.
 6. **로그**: 이벤트/위치/질문/역방향/이탈을 기록하고 `#arrive-summary`에 요약.
 
+## AI 도구 (MCP + skill)
+
+독립 채팅 앱이 아니라 **OpenCode/Paseo의 AI가 호출하는 도구**입니다.
+
+- MCP 서버: `guide/mcp/server.mjs` (stdio, 의존성 없음)
+- 등록: `~/.config/opencode/opencode.json` → `mcp.nav`
+- 스킬: `~/.config/opencode/skills/navigation/SKILL.md`
+- 테스트: `node mcp/test.mjs`
+
+도구:
+
+| 도구 | 역할 |
+|---|---|
+| `nav_location` | 위치 사용 가능 여부. PC 도구라 폰 GPS는 직접 못 읽음 → AI가 역/동네를 물어봄 |
+| `nav_search_places` | 주변 카페/맛집 후보(거리·도보 시간) |
+| `nav_place` | 장소 상세 |
+| `nav_route` | 도보 경로. 르 파운드는 6단계 + 가이드 딥링크 |
+| `nav_open_guide` | 가이드 앱 링크 (`?route=jamwon4-le-four`) |
+
+예: OpenCode에서 "잠원역 근처 카페 추천하고 르 파운드로 안내해줘"라고 하면
+AI가 `nav_search_places` → `nav_route` → `nav_open_guide`를 호출하고,
+마지막에 받은 링크로 가이드 앱을 엽니다. **연속 길안내는 앱이 담당**합니다.
+
+> MCP 도구는 OpenCode 데스크톱/Paseo를 재시작해야 로드될 수 있습니다.
+
 ## 데이터 (중요)
 
 - `data/routes/jamwon4-le-four.json`은 **초안**입니다. `verified: false`.
@@ -81,6 +106,8 @@ guide/
   js/log.js        지표/내보내기
   data/routes/     파일럿 경로
   data/photos/     임시 사진
+  mcp/server.mjs   nav MCP 서버 (OpenCode/Paseo 도구)
+  mcp/test.mjs     MCP 도구 테스트
   test/unit/       node --test
   test/e2e/        Playwright
 ```

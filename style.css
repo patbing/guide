@@ -72,7 +72,7 @@ button { font: inherit; cursor: pointer; border: 0; border-radius: 14px; min-hei
 .primary:hover { background: var(--accent-2); }
 .secondary { background: transparent; color: var(--ink); border: 1px solid var(--line); font-weight: 750; }
 .secondary:hover { border-color: var(--accent); color: var(--accent); }
-.ghost { background: transparent; color: var(--muted); border: 0; min-height: 36px; text-align: left; font-size: 12px; }
+.ghost { background: transparent; color: var(--muted); border: 0; min-height: 36px; text-align: left; font-size: 12px; text-decoration: none; }
 .big { width: 100%; min-height: 58px; font-size: 17px; }
 .row { display: flex; gap: 10px; }
 .row > button { flex: 1; }
@@ -105,11 +105,11 @@ button { font: inherit; cursor: pointer; border: 0; border-radius: 14px; min-hei
 }
 .chat-hero { padding: 8px 0 0; }
 .chat-hero h1 { font-size: 27px; }
-#screen-home.active { height: calc(100dvh - 112px); display: flex; flex-direction: column; gap: 10px; }
-#screen-home.active .chat-hero,
-#screen-home.active .chips,
-#screen-home.active .chat-inputcard,
-#screen-home.active .chat-foot { flex: none; }
+#screen-chat.active { height: calc(100dvh - 112px); display: flex; flex-direction: column; gap: 10px; }
+#screen-chat.active .chat-hero,
+#screen-chat.active .chips,
+#screen-chat.active .chat-inputcard,
+#screen-chat.active .chat-foot { flex: none; }
 #chat-log { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 .chips { display: flex; gap: 6px; overflow-x: auto; padding: 2px 0 4px; scrollbar-width: none; }
 .chips::-webkit-scrollbar { display: none; }

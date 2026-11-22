@@ -44,6 +44,7 @@ const state = {
     category: 'cafe',
     offset: 0,
     demo: new URLSearchParams(location.search).has('demo'),
+    demoChat: new URLSearchParams(location.search).has('chat'),
     map: null,
   },
 };
@@ -64,7 +65,7 @@ function render() {
   const phase = state.phase;
   $('#phase-pill').textContent = phaseLabel(phase);
   $('#phase-pill').dataset.phase = phase;
-  if (phase === 'IDLE') showScreen('screen-home');
+  if (phase === 'IDLE') showScreen(state.chat.demoChat ? 'screen-chat' : 'screen-home');
   else if (phase === 'PREVIEW') showScreen('screen-preview');
   else if (['LOCATING', 'ORIENTING', 'LOST'].includes(phase)) { showScreen('screen-orient'); renderOrient(); }
   else if (['GUIDING', 'OFF_ROUTE'].includes(phase)) { showScreen('screen-guide'); renderGuide(); }
@@ -734,6 +735,7 @@ function initChat() {
 /* ---------------- events ---------------- */
 
 function bind() {
+  $('#btn-start').addEventListener('click', loadPilot);
   $('#btn-home').addEventListener('click', () => setPhase('IDLE'));
   $('#btn-begin').addEventListener('click', begin);
   $('#btn-yes').addEventListener('click', () => answerPhoto(true));
@@ -838,6 +840,10 @@ function init() {
   $('#debug').hidden = !state.debug;
   if (state.debug) $('#debug').open = true;
   render();
+  const params = new URLSearchParams(location.search);
+  if (params.get('route') === 'jamwon4-le-four' || params.get('dest') === 'le-four') {
+    loadPilot();
+  }
 }
 
 init();
