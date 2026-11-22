@@ -1,0 +1,20 @@
+{
+  "name": "GUIDE — 보행 안내",
+  "short_name": "GUIDE",
+  "description": "출구에서 목적지 입구까지, 실시간 보행 안내 스파이크",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f2a22",
+  "theme_color": "#0f2a22",
+  "lang": "ko",
+  "icons": [
+    {
+      "src": "data/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

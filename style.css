@@ -1,0 +1,116 @@
+:root {
+  --bg: #0f2a22;
+  --bg2: #123a2f;
+  --panel: rgba(255, 255, 255, 0.06);
+  --card: #f7f1e4;
+  --ink: #f7f1e4;
+  --ink-dark: #14251f;
+  --muted: #a8c0b5;
+  --accent: #f2b84b;
+  --accent-2: #e09a2d;
+  --danger: #e07a5f;
+  --line: rgba(255, 255, 255, 0.14);
+  --radius: 16px;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: radial-gradient(1200px 600px at 50% -180px, #1a4a3a 0%, var(--bg) 60%) fixed;
+  color: var(--ink);
+  font-family: Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+[hidden] { display: none !important; }
+.top {
+  position: sticky; top: 0; z-index: 50;
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 12px 16px;
+  background: color-mix(in srgb, var(--bg) 86%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+}
+.brand { display: flex; align-items: center; gap: 8px; font-weight: 800; letter-spacing: .06em; font-size: 15px; }
+.brand small { font-weight: 600; letter-spacing: 0; color: var(--muted); font-size: 11px; }
+.mark { color: var(--accent); font-size: 18px; }
+.pill {
+  font-size: 11px; font-weight: 800; letter-spacing: .04em;
+  padding: 6px 10px; border-radius: 999px; border: 1px solid var(--line);
+  color: var(--muted); white-space: nowrap;
+}
+.pill[data-phase="GUIDING"], .pill[data-phase="ARRIVING"] { color: var(--bg); background: var(--accent); border-color: var(--accent); }
+.pill[data-phase="OFF_ROUTE"], .pill[data-phase="LOST"] { color: #fff; background: var(--danger); border-color: var(--danger); }
+.pill[data-phase="ARRIVED"] { color: var(--bg); background: #8fd3a8; border-color: #8fd3a8; }
+
+main { max-width: 560px; margin: 0 auto; padding: 18px 16px 40px; }
+.screen { display: none; flex-direction: column; gap: 14px; }
+.screen.active { display: flex; }
+.hero { padding: 10px 0 2px; }
+.eyebrow { margin: 0 0 6px; font-size: 10px; letter-spacing: .18em; font-weight: 800; color: var(--accent); }
+h1 { margin: 0; font-size: 30px; line-height: 1.18; letter-spacing: -.02em; }
+h2 { margin: 0 0 8px; font-size: 13px; letter-spacing: .04em; color: var(--accent); }
+.sub { margin: 0; color: var(--muted); font-size: 13px; line-height: 1.5; }
+.fine { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.badge { display: inline-block; margin-top: 10px; font-size: 10px; font-weight: 800; padding: 5px 9px; border-radius: 999px; }
+.badge.warn { color: #2a1c05; background: var(--accent); }
+
+.card {
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 14px;
+}
+.bullets { margin: 0; padding-left: 18px; color: var(--muted); font-size: 13px; line-height: 1.7; }
+.steps { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 9px; }
+.steps li { display: grid; grid-template-columns: 22px 1fr; gap: 8px; font-size: 13px; line-height: 1.45; }
+.steps b { color: var(--accent); font-variant-numeric: tabular-nums; }
+.steps em { color: var(--ink); font-style: normal; font-weight: 700; }
+.place { display: grid; grid-template-columns: 104px 1fr; gap: 12px; align-items: center; }
+.place img { width: 104px; height: 78px; object-fit: cover; border-radius: 12px; background: #0b1f19; }
+.place b { display: block; font-size: 13px; margin-bottom: 3px; }
+
+button { font: inherit; cursor: pointer; border: 0; border-radius: 14px; min-height: 44px; }
+.primary { background: var(--accent); color: #1c1505; font-weight: 850; }
+.primary:hover { background: var(--accent-2); }
+.secondary { background: transparent; color: var(--ink); border: 1px solid var(--line); font-weight: 750; }
+.secondary:hover { border-color: var(--accent); color: var(--accent); }
+.ghost { background: transparent; color: var(--muted); border: 0; min-height: 36px; text-align: left; font-size: 12px; }
+.big { width: 100%; min-height: 58px; font-size: 17px; }
+.row { display: flex; gap: 10px; }
+.row > button { flex: 1; }
+.inputcard { display: flex; gap: 8px; align-items: center; padding: 8px; }
+.inputcard input {
+  flex: 1; min-width: 0; min-height: 42px; border-radius: 10px; border: 1px solid var(--line);
+  background: rgba(0,0,0,.18); color: var(--ink); padding: 0 12px; font: inherit; font-size: 13px;
+}
+.inputcard input::placeholder { color: rgba(247,241,228,.45); }
+.inputcard button { padding: 0 14px; }
+
+.map { width: 100%; height: 220px; border-radius: var(--radius); overflow: hidden; background: #0b1f19; border: 1px solid var(--line); }
+.map.small { height: 180px; }
+.leaflet-container { background: #0b1f19; font: inherit; }
+.photo { width: 100%; max-height: 300px; object-fit: cover; border-radius: var(--radius); background: #0b1f19; border: 1px solid var(--line); }
+.status { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.distance { margin: 0; font-size: 17px; color: var(--accent); font-weight: 800; font-variant-numeric: tabular-nums; }
+.landmark { margin: 0; font-size: 14px; color: var(--ink); font-weight: 700; }
+.answer { margin: 0; font-size: 13px; line-height: 1.55; color: var(--muted); white-space: pre-wrap; }
+.progress { height: 6px; border-radius: 999px; background: rgba(255,255,255,.12); overflow: hidden; }
+#guide-bar { height: 100%; width: 0%; background: var(--accent); transition: width .3s; }
+.pre { margin: 0; font-size: 11px; line-height: 1.45; color: var(--muted); white-space: pre-wrap; word-break: break-word; }
+
+.toast {
+  position: fixed; left: 50%; bottom: calc(24px + env(safe-area-inset-bottom)); transform: translateX(-50%);
+  max-width: min(92vw, 480px); padding: 12px 16px; border-radius: 12px;
+  background: #f7f1e4; color: #1c1505; font-size: 13px; font-weight: 700; text-align: center;
+  box-shadow: 0 12px 40px rgba(0,0,0,.35); z-index: 100;
+}
+.debug { max-width: 560px; margin: 0 auto 24px; padding: 0 16px; color: var(--muted); font-size: 11px; }
+.debug summary { cursor: pointer; }
+.dbg { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 0; }
+.dbg button { min-height: 30px; padding: 0 8px; font-size: 10px; background: var(--panel); color: var(--ink); border: 1px solid var(--line); }
+code { color: var(--accent); }
+
+@media (min-width: 720px) {
+  main { padding-top: 28px; }
+  h1 { font-size: 36px; }
+  .map { height: 280px; }
+}

@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f2a22" />
+  <title>GUIDE — 보행 안내</title>
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./data/icons/icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="./data/icons/icon.svg" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <header class="top">
+    <div class="brand"><span class="mark">◎</span> GUIDE <small>보행 안내</small></div>
+    <div id="phase-pill" class="pill" data-phase="IDLE">대기</div>
+  </header>
+
+  <main>
+    <!-- HOME -->
+    <section id="screen-home" class="screen active">
+      <div class="hero">
+        <p class="eyebrow">PILOT · 400~800m</p>
+        <h1>잠원역 4번 출구<br />→ 르 파운드</h1>
+        <p class="sub">667m · 약 9분 · 회전 4회</p>
+        <span class="badge warn">데이터 초안 · 현장 확인 필요</span>
+      </div>
+      <div class="card">
+        <h2>이번 스파이크에서 검증할 것</h2>
+        <ul class="bullets">
+          <li>출구 180° — 등지고 서기 + 10m 이동</li>
+          <li>말로 하는 랜드마크 확인 (사진 없이)</li>
+          <li>회전 안내 · 입구/층/간판</li>
+        </ul>
+      </div>
+      <button id="btn-start" class="primary big">경로 불러오기</button>
+      <p class="fine">GPS·나침반은 HTTPS에서만 동작합니다. 현장에서 이어폰 사용을 권장합니다.</p>
+    </section>
+
+    <!-- PREVIEW -->
+    <section id="screen-preview" class="screen">
+      <button id="btn-home" class="ghost">← 처음</button>
+      <h1 id="preview-title">경로</h1>
+      <p id="preview-meta" class="sub"></p>
+      <div id="map" class="map">지도 로딩…</div>
+      <div class="card">
+        <h2>오는 길</h2>
+        <ol id="preview-steps" class="steps"></ol>
+      </div>
+      <div class="card place">
+        <img id="entrance-photo" alt="입구 사진" />
+        <div>
+          <b id="entrance-title"></b>
+          <p id="entrance-note" class="sub"></p>
+        </div>
+      </div>
+      <button id="btn-begin" class="primary big">출발</button>
+      <p class="fine">출발을 누르면 위치·나침반 권한을 요청합니다.</p>
+    </section>
+
+    <!-- ORIENT -->
+    <section id="screen-orient" class="screen">
+      <p class="eyebrow">ORIENTING</p>
+      <h1 id="orient-title">출구를 등지고 서세요</h1>
+      <p id="orient-sub" class="sub"></p>
+      <img id="orient-photo" class="photo" alt="출구 사진" />
+      <div id="orient-status" class="status">GPS 잡는 중…</div>
+      <div class="row">
+        <button id="btn-yes" class="primary big">맞아요</button>
+        <button id="btn-no" class="secondary big">반대예요</button>
+      </div>
+      <button id="btn-walk" class="secondary">10m 걸어보기</button>
+      <div class="card" id="orient-question-card" hidden>
+        <p id="orient-question"></p>
+        <div class="row">
+          <button id="btn-q-yes" class="primary">보여요</button>
+          <button id="btn-q-no" class="secondary">안 보여요</button>
+        </div>
+      </div>
+      <div class="card inputcard">
+        <input id="orient-input" type="text" placeholder="예: 앞에 약국이 보여" autocomplete="off" />
+        <button id="btn-orient-answer" class="secondary">확인</button>
+      </div>
+      <button id="btn-mic-orient" class="ghost">🎤 말로 확인</button>
+    </section>
+
+    <!-- GUIDE -->
+    <section id="screen-guide" class="screen">
+      <p class="eyebrow">GUIDING</p>
+      <h1 id="guide-action">안내를 준비하고 있어요</h1>
+      <p id="guide-distance" class="distance"></p>
+      <p id="guide-landmark" class="landmark"></p>
+      <div class="progress"><div id="guide-bar"></div></div>
+      <div class="row">
+        <button id="btn-mic" class="primary big">🎤 말로 확인</button>
+        <button id="btn-here" class="secondary big">여기야</button>
+      </div>
+      <div class="card inputcard">
+        <input id="guide-input" type="text" placeholder="예: 앞에 GS25 보여" autocomplete="off" />
+        <button id="btn-answer" class="secondary">확인</button>
+      </div>
+      <p id="guide-answer" class="answer"></p>
+      <div class="row">
+        <button id="btn-map" class="ghost">지도</button>
+        <button id="btn-stop" class="ghost">종료</button>
+      </div>
+      <div id="guide-map" class="map small" hidden></div>
+    </section>
+
+    <!-- ARRIVE -->
+    <section id="screen-arrive" class="screen">
+      <p class="eyebrow">ARRIVING</p>
+      <h1 id="arrive-title">도착했어요</h1>
+      <img id="arrive-photo" class="photo" alt="입구 사진" />
+      <p id="arrive-note" class="sub"></p>
+      <button id="btn-arrived" class="primary big">도착 확인</button>
+      <div class="card"><pre id="arrive-summary" class="pre"></pre></div>
+      <button id="btn-home2" class="ghost" onclick="location.reload()">처음으로</button>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" hidden></div>
+
+  <details id="debug" class="debug" hidden>
+    <summary>DEBUG</summary>
+    <div class="dbg">
+      <p>콘솔에서 <code>__guide</code> 사용</p>
+      <button onclick="window.__guide?.setFix(37.5130487,127.0114866,10)">출구 fix</button>
+      <button onclick="window.__guide?.setHeading(59,10,true)">heading 59</button>
+      <button onclick="window.__guide?.tick()">tick</button>
+    </div>
+  </details>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script type="module" src="./js/app.js"></script>
+</body>
+</html>

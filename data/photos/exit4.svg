@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1d5543"/>
+      <stop offset="1" stop-color="#0b1f19"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#g)"/>
+  <text x="56" y="112" font-family="Pretendard, 'Malgun Gothic', sans-serif" font-size="44" font-weight="700" fill="#f7f1e4">잠원역 4번 출구</text>
+  <text x="56" y="168" font-family="Pretendard, 'Malgun Gothic', sans-serif" font-size="22" font-weight="700" fill="#f2b84b">현장 사진 필요</text>
+  <text x="56" y="212" font-family="Pretendard, 'Malgun Gothic', sans-serif" font-size="18" fill="#a8c0b5">출구를 등지고 섰을 때의 정면</text>
+  <path d="M 600 500 L 600 300 L 560 340 M 600 300 L 640 340" stroke="#f2b84b" stroke-width="18" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="56" y="540" font-family="Pretendard, 'Malgun Gothic', sans-serif" font-size="14" fill="#6f8c80">data/photos/exit4.svg · 임시 이미지</text>
+</svg>

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2a5a47"/>
+      <stop offset="1" stop-color="#0b1f19"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#g)"/>
+  <text x="56" y="112" font-family="Pretendard, 'Malgun Gothic', sans-serif" font-size="44" font-weight="700" fill="#f7f1e4">르 파운드 입구</text>
+  <text x="56" y="168" font-family="Pretendard, 'Malgun Gothic', sans-serif" font-size="22" font-weight="700" fill="#f2b84b">1F · 간판 확인 필요</text>
+  <text x="56" y="212" font-family="Pretendard, 'Malgun Gothic', sans-serif" font-size="18" fill="#a8c0b5">입구 사진은 현장 답사 후 교체</text>
+  <rect x="500" y="300" width="180" height="220" rx="10" fill="#123a2f" stroke="#f2b84b" stroke-width="3"/>
+  <rect x="530" y="330" width="120" height="190" rx="6" fill="#0b1f19" stroke="#6f8c80" stroke-width="2"/>
+  <text x="56" y="540" font-family="Pretendard, 'Malgun Gothic', sans-serif" font-size="14" fill="#6f8c80">data/photos/entrance.svg · 임시 이미지</text>
+</svg>
