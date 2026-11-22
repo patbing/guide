@@ -196,35 +196,43 @@ async function startSensors() {
 
 /* ---------------- flag mode ---------------- */
 
+let flagStarting = false;
+
 async function beginFlags() {
+  if (flagStarting) return;
   if (!state.route?.flags?.length) {
     toast('이 경로에는 깃발 데이터가 없어요');
     return;
   }
   if (state.phase === 'FLAGS' && state.flagMode) return;
-  state.session = startSession(state.route.id);
-  state.startedAt = Date.now();
-  state.belief = createBelief();
-  state.questions = 0;
-  state.question = null;
-  state.pendingCandidates = null;
-  state.lastCompassAt = 0;
-  state.lastMoveFix = null;
-  state.progress = null;
-  if (!state.locationStarted) await startSensors();
-  state.flagMode?.stop();
-  state.flagMode = createFlagMode({
-    route: state.route,
-    callbacks: {
-      speak: (text, opts) => say(text, opts),
-      vibrate,
-      log: (type, payload) => logEvent(type, payload),
-      onFinish: () => { state.flagMode = null; finish(); },
-      onSwitchContinuous: () => switchToContinuous(),
-    },
-  });
-  setPhase('FLAGS');
-  state.flagMode.start();
+  flagStarting = true;
+  try {
+    state.session = startSession(state.route.id);
+    state.startedAt = Date.now();
+    state.belief = createBelief();
+    state.questions = 0;
+    state.question = null;
+    state.pendingCandidates = null;
+    state.lastCompassAt = 0;
+    state.lastMoveFix = null;
+    state.progress = null;
+    if (!state.locationStarted) await startSensors();
+    state.flagMode?.stop();
+    state.flagMode = createFlagMode({
+      route: state.route,
+      callbacks: {
+        speak: (text, opts) => say(text, opts),
+        vibrate,
+        log: (type, payload) => logEvent(type, payload),
+        onFinish: () => { state.flagMode = null; finish(); },
+        onSwitchContinuous: () => switchToContinuous(),
+      },
+    });
+    setPhase('FLAGS');
+    state.flagMode.start();
+  } finally {
+    flagStarting = false;
+  }
 }
 
 function switchToContinuous() {
