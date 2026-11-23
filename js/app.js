@@ -1,19 +1,21 @@
-// app.js — GUIDE 스파이크: 상태 머신 + 화면 + 센서/로그 연결.
+// app.js — GUIDE 오케스트레이터: 상태 전이·센서·세션 연결. 화면 렌더는 route-ui/chat-ui.
 import { loadRoute, progress } from './router.js';
 import {
-  createBelief, addEvidence, probability, resetBelief,
+  createBelief, addEvidence,
   movementEvidence, compassEvidence, landmarkEvidence, photoEvidence, anchorPrior,
 } from './belief.js';
 import { parseUtterance, resolveLandmark } from './landmark.js';
-import { startLocation, stopLocation, requestOrientationPermission, getOnce } from './location.js';
+import { startLocation, stopLocation, requestOrientationPermission } from './location.js';
 import { speak, vibrate, initSpeech, startSTT, stopSTT, sttAvailable, stopSpeaking } from './speech.js';
 import { saveRoute, loadCachedRoute, saveLog, getSetting, saveSetting } from './storage.js';
-import { startSession, event, summary, download } from './log.js';
+import { startSession, event, download } from './log.js';
 import { distance, bearing, angleDiff, formatDistance } from './geo.js';
-import { createGuidance, tick, askLandmark, landmarkName } from './guidance.js';
-import { DEMO_ORIGIN, DEMO_POIS, detectIntent, matchPlace, rankCandidates, categoryLabel, kakaoRouteLinks } from './chat.js';
+import { createGuidance, tick, askLandmark } from './guidance.js';
 import { createFlagMode } from './flag-mode.js';
 import { renderVoiceToggle } from './flag-ui.js';
+import { DEMO_ORIGIN } from './chat.js';
+import { createChat } from './chat-ui.js';
+import { renderPreview, initPreviewMap, renderOrient, renderGuide, renderArrive, toggleGuideMap } from './route-ui.js';
 
 const ROUTE_URL = './data/routes/jamwon4-le-four.json';
 const $ = (sel) => document.querySelector(sel);
@@ -56,6 +58,8 @@ const state = {
   },
 };
 
+const chat = createChat({ state, logEvent, toast, loadPilot });
+
 function setPhase(phase) {
   if (state.phase === phase) return;
   state.phase = phase;
@@ -75,10 +79,10 @@ function render() {
   $('#phase-pill').dataset.phase = phase;
   if (phase === 'IDLE') showScreen(state.chat.demoChat ? 'screen-chat' : 'screen-home');
   else if (phase === 'PREVIEW') showScreen('screen-preview');
-  else if (['LOCATING', 'ORIENTING', 'LOST'].includes(phase)) { showScreen('screen-orient'); renderOrient(); }
-  else if (['GUIDING', 'OFF_ROUTE'].includes(phase)) { showScreen('screen-guide'); renderGuide(); }
+  else if (['LOCATING', 'ORIENTING', 'LOST'].includes(phase)) { showScreen('screen-orient'); renderOrient(state); }
+  else if (['GUIDING', 'OFF_ROUTE'].includes(phase)) { showScreen('screen-guide'); renderGuide(state); }
   else if (phase === 'FLAGS') { showScreen('screen-flags'); state.flagMode?.render(); }
-  else if (['ARRIVING', 'ARRIVED'].includes(phase)) { showScreen('screen-arrive'); renderArrive(); }
+  else if (['ARRIVING', 'ARRIVED'].includes(phase)) { showScreen('screen-arrive'); renderArrive(state); }
 }
 
 function phaseLabel(p) {
@@ -136,47 +140,12 @@ async function loadPilot() {
     state.route = route;
     saveRoute(route);
     setPhase('PREVIEW');
-    renderPreview();
-    initPreviewMap();
+    renderPreview(state);
+    initPreviewMap(state);
     logEvent('route_loaded', { id: route.id });
   } catch (e) {
     toast(`경로를 불러오지 못했어요: ${e.message}`);
   }
-}
-
-function renderPreview() {
-  const r = state.route;
-  $('#preview-title').textContent = `${r.exit.no}번 출구 → ${r.dest.name}`;
-  $('#preview-meta').textContent = `${r.lengthM}m · 약 ${Math.round(r.lengthM / 74)}분 · 회전 ${Math.max(0, r.steps.length - 2)}회`;
-  $('#preview-steps').innerHTML = r.steps.map((s) => {
-    const lm = landmarkName(r, s);
-    return `<li><b>${s.idx + 1}</b><span>${s.text}${lm ? ` <em>· ${lm}</em>` : ''}</span></li>`;
-  }).join('');
-  const e = r.entrance;
-  const photo = $('#entrance-photo');
-  if (e?.photo) { photo.src = e.photo; photo.hidden = false; } else { photo.hidden = true; }
-  $('#entrance-title').textContent = `${e?.signText || r.dest.name} ${e?.floor ? `· ${e.floor}` : ''}`;
-  $('#entrance-note').textContent = e?.note || '입구 정보는 현장 확인이 필요합니다.';
-}
-
-function initPreviewMap() {
-  const r = state.route;
-  const el = $('#map');
-  if (!window.L) { el.textContent = '지도를 불러오지 못했어요. 경로 목록을 사용하세요.'; return; }
-  if (state.previewMap) { state.previewMap.remove(); state.previewMap = null; }
-  const map = L.map(el, { zoomControl: false, attributionControl: true }).setView([r.exit.lat, r.exit.lng], 15);
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '© OpenStreetMap',
-  }).addTo(map);
-  L.polyline(r.polyline, { color: '#f2b84b', weight: 5, opacity: 0.9 }).addTo(map);
-  L.circleMarker([r.exit.lat, r.exit.lng], { radius: 7, color: '#0f2a22', fillColor: '#fff', fillOpacity: 1, weight: 2 })
-    .addTo(map).bindTooltip(`${r.exit.no}번 출구`);
-  L.circleMarker([r.dest.lat, r.dest.lng], { radius: 8, color: '#0f2a22', fillColor: '#f2b84b', fillOpacity: 1, weight: 2 })
-    .addTo(map).bindTooltip(r.dest.name);
-  L.polyline(r.polyline, { color: '#f2b84b' }).getBounds && map.fitBounds(L.polyline(r.polyline).getBounds(), { padding: [30, 30] });
-  state.previewMap = map;
-  setTimeout(() => map.invalidateSize(), 100);
 }
 
 /* ---------------- start / locate / orient ---------------- */
@@ -192,7 +161,7 @@ async function begin() {
   state.lastMoveFix = null;
   state.lastCompassAt = 0;
   setPhase('LOCATING');
-  renderOrient();
+  renderOrient(state);
   say('출구를 등지고 서세요. 준비되면 10미터만 걸어보세요.', { key: 'orient-intro', priority: 3 });
   await startSensors();
 }
@@ -269,7 +238,7 @@ function switchToContinuous() {
   setPhase('GUIDING');
   toast('연속 안내로 전환합니다');
   if (state.fix) guideStep(state.fix);
-  else renderGuide();
+  else renderGuide(state);
 }
 
 function onFix(fix) {
@@ -283,7 +252,7 @@ function onFix(fix) {
   else if (state.phase === 'ORIENTING') orientStep(fix);
   else if (state.phase === 'GUIDING' || state.phase === 'OFF_ROUTE') guideStep(fix);
   else if (state.phase === 'ARRIVING') arrivingStep(fix);
-  else if (state.phase === 'LOST') renderOrient();
+  else if (state.phase === 'LOST') renderOrient(state);
 }
 
 function onHeading(h) {
@@ -300,7 +269,7 @@ function onHeading(h) {
       maybeCommit();
     }
   }
-  if (state.phase === 'ORIENTING') renderOrient();
+  if (state.phase === 'ORIENTING') renderOrient(state);
 }
 
 function routeBearing() {
@@ -339,7 +308,7 @@ function orientStep(fix) {
   } else {
     state.lastMoveFix = fix;
   }
-  renderOrient();
+  renderOrient(state);
 
   if (state.questions < 3 && !state.question && !state.belief.committed && Date.now() - state.startedAt > 15000) {
     const candidates = (r.landmarks || []).filter((l) => (l.visibleFromM?.[0] ?? 0) <= 30 && l.category !== 'subway_exit');
@@ -349,7 +318,7 @@ function orientStep(fix) {
       state.question = { type: 'landmark', landmark: lm };
       logEvent('question', { text: lm.name });
       say(askLandmark(lm), { key: `q:${lm.id}`, priority: 2 });
-      renderOrient();
+      renderOrient(state);
     }
   }
 }
@@ -363,7 +332,7 @@ function maybeCommit() {
     state.belief = createBelief();
     state.lastMoveFix = state.fix;
     state.question = null;
-    renderOrient();
+    renderOrient(state);
   }
 }
 
@@ -387,7 +356,7 @@ function guideStep(fix) {
   if (p.remain <= 25) {
     setPhase('ARRIVING');
     say('곧 도착해요. 입구를 찾으세요.', { key: 'arriving', priority: 3 });
-    renderArrive();
+    renderArrive(state);
     return;
   }
   if (p.d > 25 && state.phase !== 'OFF_ROUTE') {
@@ -395,7 +364,7 @@ function guideStep(fix) {
     say('경로에서 벗어났어요. 잠시 멈추고 주변 간판을 알려주세요.', { key: 'offroute', priority: 3, force: true });
     vibrate([120, 80, 120]);
     logEvent('off_route', { d: Math.round(p.d) });
-    renderGuide();
+    renderGuide(state);
     return;
   }
   if (state.phase === 'OFF_ROUTE') {
@@ -405,7 +374,7 @@ function guideStep(fix) {
     } else if (p.d > 60) {
       setPhase('LOST');
       say('위치를 다시 잡을게요. 주변 간판을 하나 말해주세요.', { key: 'lost', priority: 3, force: true });
-      renderOrient();
+      renderOrient(state);
       return;
     }
   }
@@ -418,7 +387,7 @@ function guideStep(fix) {
     vibrate(ev.vibrate);
     logEvent(ev.type, { text: ev.text });
   }
-  renderGuide();
+  renderGuide(state);
 }
 
 function checkReversed(fix, p) {
@@ -455,9 +424,9 @@ function offRouteStep(fix) {
   } else if (p.d > 60) {
     setPhase('LOST');
     say('위치를 다시 잡을게요. 주변 간판을 하나 말해주세요.', { key: 'lost', priority: 3, force: true });
-    renderOrient();
+    renderOrient(state);
   } else {
-    renderGuide();
+    renderGuide(state);
   }
 }
 
@@ -478,7 +447,7 @@ function finish({ silent = false, haptic = true } = {}) {
   setPhase('ARRIVED');
   if (!silent) say(`도착했어요. ${state.route.dest.name}입니다.`, { key: 'arrived', priority: 3, force: true });
   if (haptic) vibrate([200, 100, 200]);
-  renderArrive();
+  renderArrive(state);
 }
 
 /* ---------------- landmark dialogue ---------------- */
@@ -563,7 +532,7 @@ function reanchor() {
   state.lastMoveFix = state.fix;
   if (state.phase !== 'ORIENTING' && state.phase !== 'LOST') setPhase('ORIENTING');
   say('주변에 보이는 간판을 말해 주세요. 예: 앞에 약국이 보여.', { key: 'reanchor', priority: 3, force: true });
-  renderOrient();
+  renderOrient(state);
   setTimeout(() => $('#orient-input')?.focus?.(), 100);
 }
 
@@ -582,246 +551,7 @@ function stopAll() {
   toast('안내를 종료했어요');
 }
 
-/* ---------------- render orient / guide / arrive ---------------- */
 
-function renderOrient() {
-  const r = state.route;
-  if (!r) return;
-  const title = $('#orient-title');
-  const sub = $('#orient-sub');
-  const photo = $('#orient-photo');
-  const status = $('#orient-status');
-  const yes = $('#btn-yes');
-  const no = $('#btn-no');
-  const qCard = $('#orient-question-card');
-  if (state.phase === 'LOCATING') {
-    title.textContent = '출구로 이동 중';
-    sub.textContent = 'GPS를 잡고 있어요. 출구 근처에서 기다려 주세요.';
-    photo.hidden = true;
-    yes.hidden = true; no.hidden = true;
-  } else if (state.phase === 'LOST') {
-    title.textContent = '위치를 다시 잡을게요';
-    sub.textContent = '주변에 보이는 간판을 말해 주세요. 예: 앞에 약국이 보여.';
-    photo.hidden = true;
-    yes.hidden = true; no.hidden = true;
-  } else {
-    title.textContent = '출구를 등지고 서세요';
-    sub.textContent = r.exit.note || '사진과 같은 방향이면 맞아요. 반대면 돌아서세요.';
-    photo.hidden = false; photo.src = r.exit.photo || '';
-    yes.hidden = false; no.hidden = false;
-  }
-  if (status) {
-    const acc = state.fix ? `GPS ${Math.round(state.fix.acc)}m` : 'GPS 대기';
-    const h = state.heading?.absolute ? ` · 나침반 ${Math.round(state.heading.deg)}°` : ' · 나침반 대기';
-    const L = state.belief?.L != null ? ` · 방향 ${Math.round(probability(state.belief) * 100)}%` : '';
-    status.textContent = `${acc}${h}${L}`;
-  }
-  if (state.question?.type === 'landmark') {
-    qCard.hidden = false;
-    $('#orient-question').textContent = askLandmark(state.question.landmark);
-  } else {
-    qCard.hidden = true;
-  }
-}
-
-function renderGuide() {
-  const r = state.route;
-  const p = state.progress || (state.fix ? progress(r, state.fix) : null);
-  if (!p) return;
-  const next = p.next;
-  const lm = landmarkName(r, next);
-  const action = state.phase === 'OFF_ROUTE'
-    ? '경로에서 벗어났어요'
-    : next ? next.text : (p.remain <= 25 ? '곧 도착' : '직진하세요');
-  $('#guide-action').textContent = action;
-  $('#guide-distance').textContent = `남은 ${formatDistance(p.remain)}${next ? ` · 다음 ${formatDistance(p.toNext)}` : ''}`;
-  $('#guide-landmark').textContent = lm ? `랜드마크: ${lm}` : '';
-  const pct = r.lengthM ? Math.max(0, Math.min(100, ((r.lengthM - p.remain) / r.lengthM) * 100)) : 0;
-  $('#guide-bar').style.width = `${pct}%`;
-  if (state.guideMap) {
-    const fix = state.fix;
-    if (fix) {
-      if (state.guideFixMarker) state.guideFixMarker.setLatLng([fix.lat, fix.lng]);
-      else state.guideFixMarker = L.circleMarker([fix.lat, fix.lng], { radius: 7, color: '#0f2a22', fillColor: '#fff', fillOpacity: 1, weight: 2 }).addTo(state.guideMap);
-    }
-  }
-}
-
-function renderArrive() {
-  const r = state.route;
-  const e = r.entrance;
-  if (!e) return;
-  $('#arrive-title').textContent = state.phase === 'ARRIVED' ? `도착: ${r.dest.name}` : '곧 도착';
-  const photo = $('#arrive-photo');
-  if (e.photo) { photo.src = e.photo; photo.hidden = false; } else photo.hidden = true;
-  $('#arrive-note').textContent = `${e.signText || r.dest.name} ${e.floor ? `· ${e.floor}` : ''} ${e.note || ''}`.trim();
-  const sum = summary(state.session, r.lengthM);
-  $('#arrive-summary').textContent = JSON.stringify(sum, null, 2);
-}
-
-/* ---------------- chat-first ---------------- */
-
-function escChat(s) {
-  return String(s).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
-}
-
-function appendChat(role, text, { html = null, wide = false } = {}) {
-  const log = $('#chat-log');
-  if (!log) return;
-  const msg = document.createElement('div');
-  msg.className = `msg ${role}${wide ? ' wide' : ''}`;
-  const bubble = document.createElement('div');
-  bubble.className = 'bubble';
-  if (html) {
-    bubble.innerHTML = `${text ? `<div class="msg-text">${escChat(text)}</div>` : ''}${html.trim()}`;
-  } else {
-    bubble.textContent = text;
-  }
-  msg.appendChild(bubble);
-  log.appendChild(msg);
-  state.chat.messages.push({ role, text, html });
-  log.scrollTop = log.scrollHeight;
-}
-
-function chatCandidatesHtml(cands) {
-  return cands.map((c) => `
-    <div class="cand">
-      <div><b>${escChat(c.name)}</b><span>${categoryLabel(c.category)} · ${c.distanceM}m · 도보 ${c.walkMin}분${c.routeId ? ' · 정밀 안내 준비됨' : ''}</span></div>
-      <button data-select="${escChat(c.id)}">안내</button>
-    </div>`).join('');
-}
-
-async function getChatOrigin() {
-  if (state.chat.demo) return DEMO_ORIGIN;
-  try {
-    return await getOnce(8000);
-  } catch {
-    appendChat('assistant', '위치를 바로 못 잡아서 잠원역 4번 출구 기준으로 찾아볼게요.');
-    return DEMO_ORIGIN;
-  }
-}
-
-async function handleChat(text) {
-  const raw = String(text || '').trim();
-  if (!raw) return;
-  appendChat('user', raw);
-  const intent = detectIntent(raw);
-  logEvent('chat', { text: raw, intent: intent.type, category: intent.category });
-
-  if (intent.type === 'recommend') {
-    const origin = await getChatOrigin();
-    state.chat.origin = origin;
-    state.chat.category = intent.category;
-    state.chat.offset = 3;
-    const cands = rankCandidates(origin, intent.category, DEMO_POIS, 3, 0);
-    state.chat.candidates = cands;
-    if (!cands.length) {
-      appendChat('assistant', '근처에서 찾지 못했어요. 다른 조건으로 말해 주세요.');
-      return;
-    }
-    appendChat('assistant', `${origin.label || '현재 위치'} 근처 ${categoryLabel(intent.category)} ${cands.length}곳을 찾았어요. 어디로 안내할까요?`, {
-      html: chatCandidatesHtml(cands),
-      wide: true,
-    });
-    renderChatMap(origin, cands);
-    return;
-  }
-
-  if (intent.type === 'more') {
-    const cands = rankCandidates(state.chat.origin, state.chat.category, DEMO_POIS, 3, state.chat.offset);
-    state.chat.offset += 3;
-    if (!cands.length) {
-      appendChat('assistant', '더 이상 후보가 없어요.');
-      return;
-    }
-    state.chat.candidates = cands;
-    appendChat('assistant', '다른 후보예요.', { html: chatCandidatesHtml(cands), wide: true });
-    renderChatMap(state.chat.origin, cands);
-    return;
-  }
-
-  if (intent.type === 'navigate') {
-    const place = matchPlace(raw, DEMO_POIS) ||
-      (/(첫|1번|에이|a)/i.test(raw) ? state.chat.candidates[0] : null);
-    if (place) {
-      selectChatPlace(place.id);
-      return;
-    }
-    appendChat('assistant', '어느 곳으로 갈까요? 후보 카드에서 고르거나 이름을 말해 주세요.');
-    return;
-  }
-
-  if (intent.type === 'cancel') {
-    appendChat('assistant', '알겠어요. 다시 말해 주세요.');
-    return;
-  }
-
-  appendChat('assistant', '아직 이해하지 못했어요. "근처 카페 추천" 또는 "르 파운드로 안내"처럼 말해 주세요.');
-}
-
-async function selectChatPlace(id) {
-  const place = DEMO_POIS.find((p) => p.id === id);
-  if (!place) return;
-  logEvent('chat_select', { id, name: place.name });
-  if (place.routeId) {
-    appendChat('assistant', `${place.name}로 안내할게요. 경로를 불러오는 중...`);
-    await loadPilot();
-    return;
-  }
-  const links = kakaoRouteLinks(state.chat.origin, place);
-  appendChat('assistant', `${place.name}까지 정밀 도보 안내는 아직 준비 중이에요. 카카오맵으로 안내할까요?`, {
-    html: `<div class="cand"><div><b>${escChat(place.name)}</b><span>카카오맵 도보 길찾기</span></div><a class="primary" style="display:inline-flex;align-items:center;padding:0 12px;min-height:38px;border-radius:9px;text-decoration:none;font-weight:800;color:#1c1505" href="${links.web}" target="_blank" rel="noopener">열기</a></div>`,
-    wide: true,
-  });
-}
-
-function renderChatMap(origin, cands) {
-  const el = $('#chat-map');
-  if (!el) return;
-  if (!window.L) { el.hidden = true; return; }
-  el.hidden = false;
-  if (state.chat.map) { state.chat.map.remove(); state.chat.map = null; }
-  const map = L.map(el, { zoomControl: false, attributionControl: false }).setView([origin.lat, origin.lng], 15);
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
-  L.circleMarker([origin.lat, origin.lng], { radius: 7, color: '#0f2a22', fillColor: '#fff', fillOpacity: 1, weight: 2 })
-    .addTo(map).bindTooltip(origin.label || '출발');
-  const pts = [[origin.lat, origin.lng]];
-  for (const c of cands) {
-    L.circleMarker([c.lat, c.lng], { radius: 7, color: '#0f2a22', fillColor: '#f2b84b', fillOpacity: 1, weight: 2 })
-      .addTo(map).bindTooltip(c.name);
-    pts.push([c.lat, c.lng]);
-  }
-  map.fitBounds(pts, { padding: [28, 28] });
-  state.chat.map = map;
-  setTimeout(() => map.invalidateSize(), 100);
-}
-
-function initChat() {
-  appendChat('assistant', '어디로 가고 싶으세요? "근처 카페 추천"처럼 말하면 후보를 찾아드릴게요.');
-  document.querySelectorAll('[data-chip]').forEach((b) => {
-    b.addEventListener('click', () => handleChat(b.dataset.chip));
-  });
-  $('#btn-chat-send')?.addEventListener('click', () => {
-    const input = $('#chat-input');
-    handleChat(input.value);
-    input.value = '';
-  });
-  $('#chat-input')?.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      handleChat(e.target.value);
-      e.target.value = '';
-    }
-  });
-  $('#btn-chat-mic')?.addEventListener('click', () => {
-    if (!sttAvailable()) { toast('이 브라우저는 음성인식을 지원하지 않아요. 텍스트로 입력하세요.'); return; }
-    startSTT((t) => handleChat(t), () => stopSTT());
-  });
-  $('#btn-pilot')?.addEventListener('click', loadPilot);
-  $('#chat-log')?.addEventListener('click', (e) => {
-    const b = e.target.closest('[data-select]');
-    if (b) selectChatPlace(b.dataset.select);
-  });
-}
 
 /* ---------------- events ---------------- */
 
@@ -844,7 +574,7 @@ function bind() {
   $('#btn-q-no').addEventListener('click', () => answerLandmarkYesNo(false));
   $('#btn-here').addEventListener('click', reanchor);
   $('#btn-stop').addEventListener('click', stopAll);
-  $('#btn-map').addEventListener('click', toggleGuideMap);
+  $('#btn-map').addEventListener('click', () => toggleGuideMap(state, toast));
   $('#btn-answer').addEventListener('click', () => {
     const input = $('#guide-input');
     answerText(input.value);
@@ -877,25 +607,10 @@ function bind() {
   $('#btn-arrived').addEventListener('click', finish);
   $('#btn-log')?.addEventListener('click', () => { if (state.session) download(state.session); });
   $('#btn-debug')?.addEventListener('click', () => { $('#debug').hidden = !$('#debug').hidden; });
-}
-
-function toggleGuideMap() {
-  const el = $('#guide-map');
-  if (!window.L) { toast('지도를 불러오지 못했어요'); return; }
-  if (state.guideMap) {
-    el.hidden = !el.hidden;
-    if (!el.hidden) setTimeout(() => state.guideMap.invalidateSize(), 50);
-    return;
-  }
-  el.hidden = false;
-  const r = state.route;
-  const map = L.map(el, { zoomControl: false }).setView([r.exit.lat, r.exit.lng], 16);
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
-  L.polyline(r.polyline, { color: '#f2b84b', weight: 5 }).addTo(map);
-  L.circleMarker([r.exit.lat, r.exit.lng], { radius: 6, color: '#0f2a22', fillColor: '#fff', fillOpacity: 1, weight: 2 }).addTo(map);
-  L.circleMarker([r.dest.lat, r.dest.lng], { radius: 7, color: '#0f2a22', fillColor: '#f2b84b', fillOpacity: 1, weight: 2 }).addTo(map);
-  state.guideMap = map;
-  setTimeout(() => map.invalidateSize(), 100);
+  $('#btn-home2')?.addEventListener('click', () => location.reload());
+  $('#dbg-fix')?.addEventListener('click', () => onFix({ lat: 37.5130487, lng: 127.0114866, acc: 10, t: Date.now() }));
+  $('#dbg-heading')?.addEventListener('click', () => onHeading({ deg: 59, accuracyDeg: 10, absolute: true, stable: true, t: Date.now() }));
+  $('#dbg-tick')?.addEventListener('click', () => guideStep(state.fix));
 }
 
 /* ---------------- debug API / init ---------------- */
@@ -919,7 +634,7 @@ function exposeDebug() {
     flags: () => state.flagMode?.getState() || null,
     flagNext: () => state.flagMode?.confirm(),
     flagSwitch: () => state.flagMode?.switchContinuous(),
-    chat: handleChat,
+    chat: chat.handleChat,
     chatState: state.chat,
     reset: () => { stopAll(); state.route = null; state.fix = null; state.belief = createBelief(); setPhase('IDLE'); },
   };
@@ -934,7 +649,7 @@ function registerSW() {
 function init() {
   initSpeech();
   bind();
-  initChat();
+  chat.initChat();
   exposeDebug();
   registerSW();
   $('#debug').hidden = !state.debug;

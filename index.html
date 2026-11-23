@@ -20,6 +20,7 @@
     <symbol id="icon-return" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3"/></symbol>
     <symbol id="icon-sound-on" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4zM16 8a5 5 0 0 1 0 8"/></symbol>
     <symbol id="icon-sound-off" viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4zM17 9l4 6M21 9l-4 6"/></symbol>
+    <symbol id="icon-mic" viewBox="0 0 24 24"><path d="M12 3a3 3 0 0 0-3 3v5a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3M5 11a7 7 0 0 0 14 0M12 18v3M9 21h6"/></symbol>
   </svg>
 
   <header class="top">
@@ -70,7 +71,9 @@
       <div id="chat-map" class="map chatmap" hidden></div>
       <div id="chat-log" class="chat-log" aria-live="polite"></div>
       <div class="chat-inputcard">
-        <button id="btn-chat-mic" class="iconbtn" aria-label="음성 입력">🎤</button>
+        <button id="btn-chat-mic" class="iconbtn" aria-label="음성 입력">
+          <svg class="icon" aria-hidden="true"><use href="#icon-mic"></use></svg>
+        </button>
         <input id="chat-input" type="text" placeholder="예: 근처 카페 추천해줘" autocomplete="off" />
         <button id="btn-chat-send" class="primary">전송</button>
       </div>
@@ -127,7 +130,7 @@
         <input id="orient-input" type="text" placeholder="예: 앞에 약국이 보여" autocomplete="off" />
         <button id="btn-orient-answer" class="secondary">확인</button>
       </div>
-      <button id="btn-mic-orient" class="ghost">🎤 말로 확인</button>
+      <button id="btn-mic-orient" class="ghost"><svg class="icon" aria-hidden="true"><use href="#icon-mic"></use></svg> 말로 확인</button>
     </section>
 
     <!-- GUIDE -->
@@ -138,7 +141,7 @@
       <p id="guide-landmark" class="landmark"></p>
       <div class="progress"><div id="guide-bar"></div></div>
       <div class="row">
-        <button id="btn-mic" class="primary big">🎤 말로 확인</button>
+        <button id="btn-mic" class="primary big"><svg class="icon" aria-hidden="true"><use href="#icon-mic"></use></svg> 말로 확인</button>
         <button id="btn-here" class="secondary big">여기야</button>
       </div>
       <div class="card inputcard">
@@ -206,7 +209,7 @@
       <button id="btn-arrived" class="primary big">도착 확인</button>
       <button id="btn-log" class="secondary">로그 저장 (JSON)</button>
       <div class="card"><pre id="arrive-summary" class="pre"></pre></div>
-      <button id="btn-home2" class="ghost" onclick="location.reload()">처음으로</button>
+      <button id="btn-home2" class="ghost">처음으로</button>
     </section>
   </main>
 
@@ -216,9 +219,9 @@
     <summary>DEBUG</summary>
     <div class="dbg">
       <p>콘솔에서 <code>__guide</code> 사용</p>
-      <button onclick="window.__guide?.setFix(37.5130487,127.0114866,10)">출구 fix</button>
-      <button onclick="window.__guide?.setHeading(59,10,true)">heading 59</button>
-      <button onclick="window.__guide?.tick()">tick</button>
+      <button id="dbg-fix">출구 fix</button>
+      <button id="dbg-heading">heading 59</button>
+      <button id="dbg-tick">tick</button>
     </div>
   </details>
 

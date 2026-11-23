@@ -1,4 +1,4 @@
-const CACHE = 'guide-v6';
+const CACHE = 'guide-v7';
 const ASSETS = [
   './',
   './index.html',
@@ -20,6 +20,8 @@ const ASSETS = [
   './js/storage.js',
   './js/log.js',
   './js/chat.js',
+  './js/chat-ui.js',
+  './js/route-ui.js',
   './data/routes/jamwon4-le-four.json',
   './data/photos/exit4.svg',
   './data/photos/entrance.svg',

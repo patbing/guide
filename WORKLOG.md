@@ -54,6 +54,13 @@
 - 25m/10초 이탈: 경고 + 연속 전환 유도. 복귀하면 배지 해제. 이탈 중 s 기반 스킵 금지.
 - heading offset: 표본만 `flag_offset_log`로 기록. **화살표에 적용하지 않는다.**
 
+## 구조 정리 (2026-11-23)
+
+- `app.js` 952 → 612줄. 화면 렌더는 `js/route-ui.js`, 채팅 DOM은 `js/chat-ui.js`로 분리.
+- `renderPreview`의 단계 목록과 채팅 후보 카드를 `innerHTML` 대신 DOM 생성으로 바꿈.
+- 마이크 이모지 → `#icon-mic` SVG, 인라인 `onclick` 4곳 → `addEventListener`.
+- `app.js`는 상태 전이·센서·세션만 담당. 새 모듈은 SW 캐시 v7에 포함.
+
 ## 테스트
 
 ```powershell

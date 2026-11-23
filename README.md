@@ -125,8 +125,10 @@ AI가 `nav_search_places` → `nav_route` → `nav_open_guide`를 호출하고,
 ```
 guide/
   index.html, style.css, manifest.webmanifest, sw.js
-  js/app.js        상태 머신·화면·센서/로그 연결
+  js/app.js        상태 머신·센서/로그 연결 (오케스트레이터)
+  js/route-ui.js   미리보기·안내·도착 화면 렌더
   js/chat.js       채팅 의도 파싱·데모 POI·후보 랭킹
+  js/chat-ui.js    채팅 후보/입력 DOM
   js/geo.js        거리·방위·경로 투영
   js/router.js     경로 로드·진행 계산
   js/belief.js     180° 로그오즈
