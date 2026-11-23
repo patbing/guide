@@ -61,11 +61,18 @@
 - 마이크 이모지 → `#icon-mic` SVG, 인라인 `onclick` 4곳 → `addEventListener`.
 - `app.js`는 상태 전이·센서·세션만 담당. 새 모듈은 SW 캐시 v7에 포함.
 
+## 개인정보/캐시 (2026-11-23)
+
+- `fix` 로그에서 위·경도를 기본 제거(`log.js fixPayload`). 정확도·개수만 남긴다.
+- 필드 테스트용 좌표 기록은 `?logcoords=1` 또는 DEBUG `좌표 기록` 버튼으로 켜며, **세션 한정**.
+- DEBUG `로그 삭제` 버튼(`clearLogs`)으로 기존 로그를 지울 수 있다.
+- SW: `data/routes/*.json`만 network-first, 나머지는 cache-first. 캐시 `guide-v8`.
+
 ## 테스트
 
 ```powershell
 cd guide
-node --test                 # 75 pass (cue 14 포함)
+node --test                 # 79 pass (cue 14, log 4 포함)
 node mcp/test.mjs           # nav MCP 5 tools + mode
 python test/e2e/guide_e2e.py
 python test/e2e/chat_e2e.py

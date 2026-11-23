@@ -34,6 +34,11 @@ with sync_playwright() as p:
     page.wait_for_function("window.__guide.phase() === 'GUIDING'", timeout=10000)
     print("phase after photo:", page.evaluate("window.__guide.phase()"))
 
+    fix_events = page.evaluate("window.__guide.state.session.events.filter(e => e.type === 'fix')")
+    print("fix keys:", sorted(fix_events[0].keys()) if fix_events else [])
+    assert fix_events, "expected a fix event"
+    assert "lat" not in fix_events[0] and "lng" not in fix_events[0], "coordinates must be off by default"
+
     for lat, lng in [(37.51342, 127.012522), (37.513816, 127.013348), (37.514643, 127.013571)]:
         page.evaluate(f"window.__guide.setFix({lat},{lng},10)")
         page.wait_for_timeout(150)
@@ -80,5 +85,16 @@ with sync_playwright() as p:
     reversed_count = page.evaluate("window.__guide.state.session.counters.reversed")
     print("reversed after photoNo:", reversed_count)
     assert reversed_count >= 1
+
+    # 세 번째 시나리오: ?logcoords=1은 세션 한정으로 좌표를 기록
+    page.goto(URL + "?route=jamwon4-le-four&logcoords=1", wait_until="load", timeout=30000)
+    page.wait_for_function("window.__guide && window.__guide.phase() === 'PREVIEW'", timeout=15000)
+    page.evaluate("window.__guide.begin()")
+    page.wait_for_function("window.__guide.phase() === 'ORIENTING'")
+    page.evaluate("window.__guide.setFix(37.5130487,127.0114866,10)")
+    page.wait_for_timeout(200)
+    fix_events = page.evaluate("window.__guide.state.session.events.filter(e => e.type === 'fix')")
+    print("opt-in keys:", sorted(fix_events[0].keys()) if fix_events else [])
+    assert fix_events and "lat" in fix_events[0] and "lng" in fix_events[0], "opt-in must record coordinates"
 
     b.close()

@@ -1,4 +1,4 @@
-const CACHE = 'guide-v7';
+const CACHE = 'guide-v8';
 const ASSETS = [
   './',
   './index.html',
@@ -42,23 +42,44 @@ self.addEventListener('activate', (e) => {
   );
 });
 
+function isRouteData(url) {
+  return url.pathname.includes('/data/routes/') && url.pathname.endsWith('.json');
+}
+
+// 경로 JSON은 네트워크 우선: 같은 캐시 버전에서 데이터만 바뀌어도 새로 받는다.
+async function networkFirst(request) {
+  try {
+    const res = await fetch(request);
+    if (res.ok) {
+      const copy = res.clone();
+      caches.open(CACHE).then((c) => c.put(request, copy));
+    }
+    return res;
+  } catch {
+    const hit = await caches.match(request);
+    return hit || new Response('', { status: 504 });
+  }
+}
+
+async function cacheFirst(request) {
+  const hit = await caches.match(request);
+  if (hit) return hit;
+  try {
+    const res = await fetch(request);
+    if (res.ok) {
+      const copy = res.clone();
+      caches.open(CACHE).then((c) => c.put(request, copy));
+    }
+    return res;
+  } catch {
+    if (request.mode === 'navigate') return caches.match('./index.html');
+    return new Response('', { status: 504 });
+  }
+}
+
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
   const url = new URL(e.request.url);
   if (url.origin !== location.origin) return;
-  e.respondWith(
-    caches.match(e.request).then((hit) => {
-      if (hit) return hit;
-      return fetch(e.request).then((res) => {
-        if (res.ok) {
-          const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put(e.request, copy));
-        }
-        return res;
-      }).catch(() => {
-        if (e.request.mode === 'navigate') return caches.match('./index.html');
-        return new Response('', { status: 504 });
-      });
-    }),
-  );
+  e.respondWith(isRouteData(url) ? networkFirst(e.request) : cacheFirst(e.request));
 });

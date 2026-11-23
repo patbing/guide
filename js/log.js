@@ -11,6 +11,16 @@ export function startSession(routeId) {
   };
 }
 
+// 기본은 좌표를 저장하지 않는다. 필드 테스트에서만 includeCoords=true.
+export function fixPayload(fix, includeCoords = false) {
+  const payload = { acc: Number.isFinite(fix?.acc) ? fix.acc : null };
+  if (includeCoords && Number.isFinite(fix?.lat) && Number.isFinite(fix?.lng)) {
+    payload.lat = fix.lat;
+    payload.lng = fix.lng;
+  }
+  return payload;
+}
+
 export function event(session, type, payload = {}) {
   if (!session) return;
   session.events.push({ t: Date.now(), type, ...payload });

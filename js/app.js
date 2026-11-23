@@ -7,8 +7,8 @@ import {
 import { parseUtterance, resolveLandmark } from './landmark.js';
 import { startLocation, stopLocation, requestOrientationPermission } from './location.js';
 import { speak, vibrate, initSpeech, startSTT, stopSTT, sttAvailable, stopSpeaking } from './speech.js';
-import { saveRoute, loadCachedRoute, saveLog, getSetting, saveSetting } from './storage.js';
-import { startSession, event, download } from './log.js';
+import { saveRoute, loadCachedRoute, saveLog, getSetting, saveSetting, clearLogs } from './storage.js';
+import { startSession, event, fixPayload, download } from './log.js';
 import { distance, bearing, angleDiff, formatDistance } from './geo.js';
 import { createGuidance, tick, askLandmark } from './guidance.js';
 import { createFlagMode } from './flag-mode.js';
@@ -44,6 +44,7 @@ const state = {
   settings: {
     voice: getSetting('voice', false) === true,
     vibrate: getSetting('vibrate', true) !== false,
+    logCoords: new URLSearchParams(location.search).has('logcoords'),
   },
   debug: new URLSearchParams(location.search).has('debug'),
   chat: {
@@ -245,7 +246,7 @@ function onFix(fix) {
   state.fix = fix;
   if (Date.now() - state.lastFixLogAt > 1000) {
     state.lastFixLogAt = Date.now();
-    logEvent('fix', { lat: fix.lat, lng: fix.lng, acc: fix.acc });
+    logEvent('fix', fixPayload(fix, state.settings.logCoords));
   }
   if (state.phase === 'FLAGS') { state.flagMode?.onFix(fix); return; }
   if (state.phase === 'LOCATING') locateStep(fix);
@@ -607,6 +608,21 @@ function bind() {
   $('#btn-arrived').addEventListener('click', finish);
   $('#btn-log')?.addEventListener('click', () => { if (state.session) download(state.session); });
   $('#btn-debug')?.addEventListener('click', () => { $('#debug').hidden = !$('#debug').hidden; });
+  const logCoordsBtn = $('#dbg-logcoords');
+  const renderLogCoords = () => {
+    if (logCoordsBtn) logCoordsBtn.textContent = `좌표 기록 ${state.settings.logCoords ? '켬' : '끔'}`;
+  };
+  logCoordsBtn?.addEventListener('click', () => {
+    state.settings.logCoords = !state.settings.logCoords;
+    renderLogCoords();
+    toast(state.settings.logCoords ? '좌표 기록을 켰어요. 테스트 후 끄세요.' : '좌표 기록을 껐어요.');
+  });
+  renderLogCoords();
+  $('#dbg-clearlogs')?.addEventListener('click', () => {
+    if (!confirm('저장된 로그를 모두 삭제할까요?')) return;
+    clearLogs();
+    toast('저장된 로그를 삭제했어요');
+  });
   $('#btn-home2')?.addEventListener('click', () => location.reload());
   $('#dbg-fix')?.addEventListener('click', () => onFix({ lat: 37.5130487, lng: 127.0114866, acc: 10, t: Date.now() }));
   $('#dbg-heading')?.addEventListener('click', () => onHeading({ deg: 59, accuracyDeg: 10, absolute: true, stable: true, t: Date.now() }));
