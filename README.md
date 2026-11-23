@@ -96,7 +96,7 @@ AR·카메라 없이 **다음 이정표까지의 화살표 + 거리**만 보여�
 ## 캐시/배포
 
 - 앱 셸은 cache-first, `data/routes/*.json`은 **network-first**입니다. 같은 캐시 버전에서 경로 데이터만 바뀌어도 새로 받습니다.
-- 배포할 때 `sw.js`의 `CACHE` 버전을 올립니다(현재 `guide-v8`).
+- 배포할 때 `sw.js`의 `CACHE` 버전을 올립니다(현재 `guide-v9`).
 
 ## AI 도구 (MCP + skill)
 

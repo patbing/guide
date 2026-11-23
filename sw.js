@@ -1,4 +1,4 @@
-const CACHE = 'guide-v8';
+const CACHE = 'guide-v9';
 const ASSETS = [
   './',
   './index.html',

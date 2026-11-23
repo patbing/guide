@@ -66,7 +66,8 @@
 - `fix` 로그에서 위·경도를 기본 제거(`log.js fixPayload`). 정확도·개수만 남긴다.
 - 필드 테스트용 좌표 기록은 `?logcoords=1` 또는 DEBUG `좌표 기록` 버튼으로 켜며, **세션 한정**.
 - DEBUG `로그 삭제` 버튼(`clearLogs`)으로 기존 로그를 지울 수 있다.
-- SW: `data/routes/*.json`만 network-first, 나머지는 cache-first. 캐시 `guide-v8`.
+- SW: `data/routes/*.json`만 network-first, 나머지는 cache-first. 캐시 `guide-v9`.
+- 시작 시 진동은 제거(사용자 제스처 전 브라우저 콘솔 에러 방지).
 
 ## 테스트
 

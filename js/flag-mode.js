@@ -186,7 +186,6 @@ export function createFlagMode({ route, callbacks = {} }) {
     render();
     const cue = currentCue();
     lastCue = { idx: state.idx, state: cue.state };
-    if (vibrateEnabled()) vibrate(CUE_HAPTIC.advance);
     const flag = currentFlag();
     log('flag_start', { idx: state.idx, flag: flag?.name });
   }
